@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedApplicationsIndexRouteImport } from './routes/_authenticated/applications/index'
+import { Route as AuthenticatedCollectionsIndexRouteImport } from './routes/_authenticated/collections/index'
 import { Route as AuthenticatedContractsIndexRouteImport } from './routes/_authenticated/contracts/index'
 import { Route as AuthenticatedContractsContractIdRouteImport } from './routes/_authenticated/contracts/$contractId'
 import { Route as AuthenticatedCustomersIndexRouteImport } from './routes/_authenticated/customers/index'
@@ -43,6 +44,12 @@ const AuthenticatedApplicationsIndexRoute =
   AuthenticatedApplicationsIndexRouteImport.update({
     id: '/applications/',
     path: '/applications/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCollectionsIndexRoute =
+  AuthenticatedCollectionsIndexRouteImport.update({
+    id: '/collections/',
+    path: '/collections/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedContractsIndexRoute =
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/applications/': typeof AuthenticatedApplicationsIndexRoute
+  '/collections/': typeof AuthenticatedCollectionsIndexRoute
   '/contracts/': typeof AuthenticatedContractsIndexRoute
   '/customers/': typeof AuthenticatedCustomersIndexRoute
   '/payments/': typeof AuthenticatedPaymentsIndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesByTo {
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/applications': typeof AuthenticatedApplicationsIndexRoute
+  '/collections': typeof AuthenticatedCollectionsIndexRoute
   '/contracts': typeof AuthenticatedContractsIndexRoute
   '/customers': typeof AuthenticatedCustomersIndexRoute
   '/payments': typeof AuthenticatedPaymentsIndexRoute
@@ -107,6 +116,7 @@ export interface FileRoutesById {
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/_authenticated/applications/': typeof AuthenticatedApplicationsIndexRoute
+  '/_authenticated/collections/': typeof AuthenticatedCollectionsIndexRoute
   '/_authenticated/contracts/': typeof AuthenticatedContractsIndexRoute
   '/_authenticated/customers/': typeof AuthenticatedCustomersIndexRoute
   '/_authenticated/payments/': typeof AuthenticatedPaymentsIndexRoute
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/applications/'
+    | '/collections/'
     | '/contracts/'
     | '/customers/'
     | '/payments/'
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/applications'
+    | '/collections'
     | '/contracts'
     | '/customers'
     | '/payments'
@@ -143,6 +155,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contracts/$contractId'
     | '/_authenticated/customers/$customerId'
     | '/_authenticated/applications/'
+    | '/_authenticated/collections/'
     | '/_authenticated/contracts/'
     | '/_authenticated/customers/'
     | '/_authenticated/payments/'
@@ -191,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApplicationsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/collections/': {
+      id: '/_authenticated/collections/'
+      path: '/collections'
+      fullPath: '/collections/'
+      preLoaderRoute: typeof AuthenticatedCollectionsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/contracts/': {
       id: '/_authenticated/contracts/'
       path: '/contracts'
@@ -234,6 +254,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContractsContractIdRoute: typeof AuthenticatedContractsContractIdRoute
   AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
   AuthenticatedApplicationsIndexRoute: typeof AuthenticatedApplicationsIndexRoute
+  AuthenticatedCollectionsIndexRoute: typeof AuthenticatedCollectionsIndexRoute
   AuthenticatedContractsIndexRoute: typeof AuthenticatedContractsIndexRoute
   AuthenticatedCustomersIndexRoute: typeof AuthenticatedCustomersIndexRoute
   AuthenticatedPaymentsIndexRoute: typeof AuthenticatedPaymentsIndexRoute
@@ -244,6 +265,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContractsContractIdRoute: AuthenticatedContractsContractIdRoute,
   AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
   AuthenticatedApplicationsIndexRoute: AuthenticatedApplicationsIndexRoute,
+  AuthenticatedCollectionsIndexRoute: AuthenticatedCollectionsIndexRoute,
   AuthenticatedContractsIndexRoute: AuthenticatedContractsIndexRoute,
   AuthenticatedCustomersIndexRoute: AuthenticatedCustomersIndexRoute,
   AuthenticatedPaymentsIndexRoute: AuthenticatedPaymentsIndexRoute,
