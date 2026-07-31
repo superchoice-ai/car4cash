@@ -186,7 +186,7 @@ function ApplicationsPage() {
         .from("loan_applications")
         .update(
           approve
-            ? { status: "approved", approved_amount: amount, approved_by: profile?.id, approved_at: new Date().toISOString() }
+            ? { status: "approved", approved_amount: amount, approved_by: profile?.id ?? null, approved_at: new Date().toISOString() }
             : { status: "rejected", reject_reason: "ไม่ผ่านเกณฑ์พิจารณา" },
         )
         .eq("id", id);
