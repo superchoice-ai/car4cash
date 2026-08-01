@@ -618,6 +618,263 @@ export type Database = {
           },
         ]
       }
+      legacy_customers: {
+        Row: {
+          address: string | null
+          branch_id: string
+          car_brand: string | null
+          car_type: string | null
+          color: string | null
+          contract_date: string | null
+          created_at: string
+          full_name: string | null
+          guarantor_name: string | null
+          guarantor_tel: string | null
+          hire_price: number
+          id: string
+          import_run_id: string | null
+          installment_amount: number
+          legacy_code: string
+          loan_amount: number
+          migrated_contract_id: string | null
+          migrated_customer_id: string | null
+          national_id: string | null
+          note: string | null
+          old_code: string | null
+          outstanding: number
+          plate_no: string | null
+          status: string
+          tax_due_date: string | null
+          tel: string | null
+          term_months: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          branch_id: string
+          car_brand?: string | null
+          car_type?: string | null
+          color?: string | null
+          contract_date?: string | null
+          created_at?: string
+          full_name?: string | null
+          guarantor_name?: string | null
+          guarantor_tel?: string | null
+          hire_price?: number
+          id?: string
+          import_run_id?: string | null
+          installment_amount?: number
+          legacy_code: string
+          loan_amount?: number
+          migrated_contract_id?: string | null
+          migrated_customer_id?: string | null
+          national_id?: string | null
+          note?: string | null
+          old_code?: string | null
+          outstanding?: number
+          plate_no?: string | null
+          status?: string
+          tax_due_date?: string | null
+          tel?: string | null
+          term_months?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          branch_id?: string
+          car_brand?: string | null
+          car_type?: string | null
+          color?: string | null
+          contract_date?: string | null
+          created_at?: string
+          full_name?: string | null
+          guarantor_name?: string | null
+          guarantor_tel?: string | null
+          hire_price?: number
+          id?: string
+          import_run_id?: string | null
+          installment_amount?: number
+          legacy_code?: string
+          loan_amount?: number
+          migrated_contract_id?: string | null
+          migrated_customer_id?: string | null
+          national_id?: string | null
+          note?: string | null
+          old_code?: string | null
+          outstanding?: number
+          plate_no?: string | null
+          status?: string
+          tax_due_date?: string | null
+          tel?: string | null
+          term_months?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legacy_customers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_customers_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "legacy_import_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_customers_migrated_contract_id_fkey"
+            columns: ["migrated_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_customers_migrated_customer_id_fkey"
+            columns: ["migrated_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legacy_import_runs: {
+        Row: {
+          branch_id: string
+          created_at: string
+          created_by: string | null
+          dataset: string
+          error_count: number
+          id: string
+          note: string | null
+          row_count: number
+          source_file: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          created_by?: string | null
+          dataset: string
+          error_count?: number
+          id?: string
+          note?: string | null
+          row_count?: number
+          source_file?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          created_by?: string | null
+          dataset?: string
+          error_count?: number
+          id?: string
+          note?: string | null
+          row_count?: number
+          source_file?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legacy_import_runs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_import_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legacy_receipts: {
+        Row: {
+          bill_no: string
+          branch_id: string
+          change_amount: number
+          created_at: string
+          follow_up_amount: number
+          full_name: string | null
+          id: string
+          import_run_id: string | null
+          insurance_amount: number
+          interest_amount: number
+          legacy_code: string
+          note: string | null
+          paid_on: string | null
+          paid_on_raw: string | null
+          penalty_amount: number
+          principal_amount: number
+          registration_amount: number
+          total_amount: number
+        }
+        Insert: {
+          bill_no: string
+          branch_id: string
+          change_amount?: number
+          created_at?: string
+          follow_up_amount?: number
+          full_name?: string | null
+          id?: string
+          import_run_id?: string | null
+          insurance_amount?: number
+          interest_amount?: number
+          legacy_code: string
+          note?: string | null
+          paid_on?: string | null
+          paid_on_raw?: string | null
+          penalty_amount?: number
+          principal_amount?: number
+          registration_amount?: number
+          total_amount?: number
+        }
+        Update: {
+          bill_no?: string
+          branch_id?: string
+          change_amount?: number
+          created_at?: string
+          follow_up_amount?: number
+          full_name?: string | null
+          id?: string
+          import_run_id?: string | null
+          insurance_amount?: number
+          interest_amount?: number
+          legacy_code?: string
+          note?: string | null
+          paid_on?: string | null
+          paid_on_raw?: string | null
+          penalty_amount?: number
+          principal_amount?: number
+          registration_amount?: number
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legacy_receipts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_receipts_import_run_id_fkey"
+            columns: ["import_run_id"]
+            isOneToOne: false
+            referencedRelation: "legacy_import_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loan_applications: {
         Row: {
           approved_amount: number | null
@@ -884,6 +1141,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      status_incidents: {
+        Row: {
+          created_at: string
+          guid: string
+          id: string
+          impact_summary: string | null
+          incident_state: string
+          link: string | null
+          notified_browser: boolean
+          notified_line: boolean
+          published_at: string
+          raw_content: string | null
+          resolved_at: string | null
+          severity: string
+          situation: string | null
+          source: string
+          started_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          guid: string
+          id?: string
+          impact_summary?: string | null
+          incident_state?: string
+          link?: string | null
+          notified_browser?: boolean
+          notified_line?: boolean
+          published_at?: string
+          raw_content?: string | null
+          resolved_at?: string | null
+          severity?: string
+          situation?: string | null
+          source?: string
+          started_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          guid?: string
+          id?: string
+          impact_summary?: string | null
+          incident_state?: string
+          link?: string | null
+          notified_browser?: boolean
+          notified_line?: boolean
+          published_at?: string
+          raw_content?: string | null
+          resolved_at?: string | null
+          severity?: string
+          situation?: string | null
+          source?: string
+          started_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       system_settings: {
         Row: {

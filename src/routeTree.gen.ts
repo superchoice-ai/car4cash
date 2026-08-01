@@ -24,7 +24,11 @@ import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_
 import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
 import { Route as AuthenticatedPaymentsIndexRouteImport } from './routes/_authenticated/payments/index'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
+import { Route as AuthenticatedReportsLegacyRouteImport } from './routes/_authenticated/reports/legacy'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
+import { Route as AuthenticatedSettingsImportRouteImport } from './routes/_authenticated/settings/import'
+import { Route as AuthenticatedStatusIndexRouteImport } from './routes/_authenticated/status/index'
+import { Route as ApiPublicStatusSyncRouteImport } from './routes/api/public/status-sync'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -111,12 +115,35 @@ const AuthenticatedReportsIndexRoute =
     path: '/reports/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsLegacyRoute =
+  AuthenticatedReportsLegacyRouteImport.update({
+    id: '/reports/legacy',
+    path: '/reports/legacy',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/settings/',
     path: '/settings/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSettingsImportRoute =
+  AuthenticatedSettingsImportRouteImport.update({
+    id: '/settings/import',
+    path: '/settings/import',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedStatusIndexRoute =
+  AuthenticatedStatusIndexRouteImport.update({
+    id: '/status/',
+    path: '/status/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const ApiPublicStatusSyncRoute = ApiPublicStatusSyncRouteImport.update({
+  id: '/api/public/status-sync',
+  path: '/api/public/status-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -124,6 +151,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/reports/legacy': typeof AuthenticatedReportsLegacyRoute
+  '/settings/import': typeof AuthenticatedSettingsImportRoute
+  '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/applications/': typeof AuthenticatedApplicationsIndexRoute
   '/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/assistant/': typeof AuthenticatedAssistantIndexRoute
@@ -134,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/payments/': typeof AuthenticatedPaymentsIndexRoute
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/status/': typeof AuthenticatedStatusIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -141,6 +172,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/reports/legacy': typeof AuthenticatedReportsLegacyRoute
+  '/settings/import': typeof AuthenticatedSettingsImportRoute
+  '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/applications': typeof AuthenticatedApplicationsIndexRoute
   '/approvals': typeof AuthenticatedApprovalsIndexRoute
   '/assistant': typeof AuthenticatedAssistantIndexRoute
@@ -151,6 +185,7 @@ export interface FileRoutesByTo {
   '/payments': typeof AuthenticatedPaymentsIndexRoute
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/status': typeof AuthenticatedStatusIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -160,6 +195,9 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/_authenticated/reports/legacy': typeof AuthenticatedReportsLegacyRoute
+  '/_authenticated/settings/import': typeof AuthenticatedSettingsImportRoute
+  '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/_authenticated/applications/': typeof AuthenticatedApplicationsIndexRoute
   '/_authenticated/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/_authenticated/assistant/': typeof AuthenticatedAssistantIndexRoute
@@ -170,6 +208,7 @@ export interface FileRoutesById {
   '/_authenticated/payments/': typeof AuthenticatedPaymentsIndexRoute
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_authenticated/status/': typeof AuthenticatedStatusIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -179,6 +218,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/contracts/$contractId'
     | '/customers/$customerId'
+    | '/reports/legacy'
+    | '/settings/import'
+    | '/api/public/status-sync'
     | '/applications/'
     | '/approvals/'
     | '/assistant/'
@@ -189,6 +231,7 @@ export interface FileRouteTypes {
     | '/payments/'
     | '/reports/'
     | '/settings/'
+    | '/status/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -196,6 +239,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/contracts/$contractId'
     | '/customers/$customerId'
+    | '/reports/legacy'
+    | '/settings/import'
+    | '/api/public/status-sync'
     | '/applications'
     | '/approvals'
     | '/assistant'
@@ -206,6 +252,7 @@ export interface FileRouteTypes {
     | '/payments'
     | '/reports'
     | '/settings'
+    | '/status'
   id:
     | '__root__'
     | '/'
@@ -214,6 +261,9 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/contracts/$contractId'
     | '/_authenticated/customers/$customerId'
+    | '/_authenticated/reports/legacy'
+    | '/_authenticated/settings/import'
+    | '/api/public/status-sync'
     | '/_authenticated/applications/'
     | '/_authenticated/approvals/'
     | '/_authenticated/assistant/'
@@ -224,12 +274,14 @@ export interface FileRouteTypes {
     | '/_authenticated/payments/'
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
+    | '/_authenticated/status/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicStatusSyncRoute: typeof ApiPublicStatusSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -339,12 +391,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/legacy': {
+      id: '/_authenticated/reports/legacy'
+      path: '/reports/legacy'
+      fullPath: '/reports/legacy'
+      preLoaderRoute: typeof AuthenticatedReportsLegacyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/settings/import': {
+      id: '/_authenticated/settings/import'
+      path: '/settings/import'
+      fullPath: '/settings/import'
+      preLoaderRoute: typeof AuthenticatedSettingsImportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/status/': {
+      id: '/_authenticated/status/'
+      path: '/status'
+      fullPath: '/status/'
+      preLoaderRoute: typeof AuthenticatedStatusIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/status-sync': {
+      id: '/api/public/status-sync'
+      path: '/api/public/status-sync'
+      fullPath: '/api/public/status-sync'
+      preLoaderRoute: typeof ApiPublicStatusSyncRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -353,6 +433,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedContractsContractIdRoute: typeof AuthenticatedContractsContractIdRoute
   AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
+  AuthenticatedReportsLegacyRoute: typeof AuthenticatedReportsLegacyRoute
+  AuthenticatedSettingsImportRoute: typeof AuthenticatedSettingsImportRoute
   AuthenticatedApplicationsIndexRoute: typeof AuthenticatedApplicationsIndexRoute
   AuthenticatedApprovalsIndexRoute: typeof AuthenticatedApprovalsIndexRoute
   AuthenticatedAssistantIndexRoute: typeof AuthenticatedAssistantIndexRoute
@@ -363,12 +445,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPaymentsIndexRoute: typeof AuthenticatedPaymentsIndexRoute
   AuthenticatedReportsIndexRoute: typeof AuthenticatedReportsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
+  AuthenticatedStatusIndexRoute: typeof AuthenticatedStatusIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedContractsContractIdRoute: AuthenticatedContractsContractIdRoute,
   AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
+  AuthenticatedReportsLegacyRoute: AuthenticatedReportsLegacyRoute,
+  AuthenticatedSettingsImportRoute: AuthenticatedSettingsImportRoute,
   AuthenticatedApplicationsIndexRoute: AuthenticatedApplicationsIndexRoute,
   AuthenticatedApprovalsIndexRoute: AuthenticatedApprovalsIndexRoute,
   AuthenticatedAssistantIndexRoute: AuthenticatedAssistantIndexRoute,
@@ -379,6 +464,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPaymentsIndexRoute: AuthenticatedPaymentsIndexRoute,
   AuthenticatedReportsIndexRoute: AuthenticatedReportsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
+  AuthenticatedStatusIndexRoute: AuthenticatedStatusIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -388,6 +474,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicStatusSyncRoute: ApiPublicStatusSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
