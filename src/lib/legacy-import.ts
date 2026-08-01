@@ -127,9 +127,12 @@ export function parseLegacyDate(raw: string | undefined | null): string | null {
   const day = parseInt(m[1]!, 10);
   const month = parseInt(m[2]!, 10);
   let year = parseInt(m[3]!, 10);
-  if (year < 100) year += year > 40 ? 2500 : 2600; // 56 -> 2556, 05 -> 2605? ปรับด้านล่าง
-  if (year > 2600) year -= 100;
+  // ระบบเดิมเก็บ พ.ศ. 2 หลัก เช่น 56 = 2556 (ถ้าล้ำอนาคตให้ถอยหลัง 100 ปี)
+  if (year < 100) year += 2500;
+  const nowBe = new Date().getFullYear() + 543;
+  if (year > nowBe + 1) year -= 100;
   const ce = year - 543;
+
   if (month < 1 || month > 12 || day < 1 || day > 31 || ce < 1950 || ce > 2100) return null;
   return `${ce}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
