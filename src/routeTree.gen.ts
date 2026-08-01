@@ -26,6 +26,7 @@ import { Route as AuthenticatedPaymentsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedSettingsImportRouteImport } from './routes/_authenticated/settings/import'
+import { Route as ApiPublicStatusSyncRouteImport } from './routes/api/public/status-sync'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -124,6 +125,11 @@ const AuthenticatedSettingsImportRoute =
     path: '/settings/import',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicStatusSyncRoute = ApiPublicStatusSyncRouteImport.update({
+  id: '/api/public/status-sync',
+  path: '/api/public/status-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/settings/import': typeof AuthenticatedSettingsImportRoute
+  '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/applications/': typeof AuthenticatedApplicationsIndexRoute
   '/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/assistant/': typeof AuthenticatedAssistantIndexRoute
@@ -150,6 +157,7 @@ export interface FileRoutesByTo {
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/settings/import': typeof AuthenticatedSettingsImportRoute
+  '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/applications': typeof AuthenticatedApplicationsIndexRoute
   '/approvals': typeof AuthenticatedApprovalsIndexRoute
   '/assistant': typeof AuthenticatedAssistantIndexRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/_authenticated/settings/import': typeof AuthenticatedSettingsImportRoute
+  '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/_authenticated/applications/': typeof AuthenticatedApplicationsIndexRoute
   '/_authenticated/approvals/': typeof AuthenticatedApprovalsIndexRoute
   '/_authenticated/assistant/': typeof AuthenticatedAssistantIndexRoute
@@ -190,6 +199,7 @@ export interface FileRouteTypes {
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/settings/import'
+    | '/api/public/status-sync'
     | '/applications/'
     | '/approvals/'
     | '/assistant/'
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/settings/import'
+    | '/api/public/status-sync'
     | '/applications'
     | '/approvals'
     | '/assistant'
@@ -227,6 +238,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contracts/$contractId'
     | '/_authenticated/customers/$customerId'
     | '/_authenticated/settings/import'
+    | '/api/public/status-sync'
     | '/_authenticated/applications/'
     | '/_authenticated/approvals/'
     | '/_authenticated/assistant/'
@@ -243,6 +255,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicStatusSyncRoute: typeof ApiPublicStatusSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -366,6 +379,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsImportRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/status-sync': {
+      id: '/api/public/status-sync'
+      path: '/api/public/status-sync'
+      fullPath: '/api/public/status-sync'
+      preLoaderRoute: typeof ApiPublicStatusSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -410,6 +430,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicStatusSyncRoute: ApiPublicStatusSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
