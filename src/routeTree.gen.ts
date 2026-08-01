@@ -24,6 +24,7 @@ import { Route as AuthenticatedCustomersCustomerIdRouteImport } from './routes/_
 import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
 import { Route as AuthenticatedPaymentsIndexRouteImport } from './routes/_authenticated/payments/index'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
+import { Route as AuthenticatedReportsLegacyRouteImport } from './routes/_authenticated/reports/legacy'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedSettingsImportRouteImport } from './routes/_authenticated/settings/import'
 import { Route as AuthenticatedStatusIndexRouteImport } from './routes/_authenticated/status/index'
@@ -114,6 +115,12 @@ const AuthenticatedReportsIndexRoute =
     path: '/reports/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsLegacyRoute =
+  AuthenticatedReportsLegacyRouteImport.update({
+    id: '/reports/legacy',
+    path: '/reports/legacy',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -144,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/reports/legacy': typeof AuthenticatedReportsLegacyRoute
   '/settings/import': typeof AuthenticatedSettingsImportRoute
   '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/applications/': typeof AuthenticatedApplicationsIndexRoute
@@ -164,6 +172,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/reports/legacy': typeof AuthenticatedReportsLegacyRoute
   '/settings/import': typeof AuthenticatedSettingsImportRoute
   '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/applications': typeof AuthenticatedApplicationsIndexRoute
@@ -186,6 +195,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
+  '/_authenticated/reports/legacy': typeof AuthenticatedReportsLegacyRoute
   '/_authenticated/settings/import': typeof AuthenticatedSettingsImportRoute
   '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
   '/_authenticated/applications/': typeof AuthenticatedApplicationsIndexRoute
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/contracts/$contractId'
     | '/customers/$customerId'
+    | '/reports/legacy'
     | '/settings/import'
     | '/api/public/status-sync'
     | '/applications/'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/contracts/$contractId'
     | '/customers/$customerId'
+    | '/reports/legacy'
     | '/settings/import'
     | '/api/public/status-sync'
     | '/applications'
@@ -249,6 +261,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/contracts/$contractId'
     | '/_authenticated/customers/$customerId'
+    | '/_authenticated/reports/legacy'
     | '/_authenticated/settings/import'
     | '/api/public/status-sync'
     | '/_authenticated/applications/'
@@ -378,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/legacy': {
+      id: '/_authenticated/reports/legacy'
+      path: '/reports/legacy'
+      fullPath: '/reports/legacy'
+      preLoaderRoute: typeof AuthenticatedReportsLegacyRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/settings'
@@ -413,6 +433,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedContractsContractIdRoute: typeof AuthenticatedContractsContractIdRoute
   AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
+  AuthenticatedReportsLegacyRoute: typeof AuthenticatedReportsLegacyRoute
   AuthenticatedSettingsImportRoute: typeof AuthenticatedSettingsImportRoute
   AuthenticatedApplicationsIndexRoute: typeof AuthenticatedApplicationsIndexRoute
   AuthenticatedApprovalsIndexRoute: typeof AuthenticatedApprovalsIndexRoute
@@ -431,6 +452,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedContractsContractIdRoute: AuthenticatedContractsContractIdRoute,
   AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
+  AuthenticatedReportsLegacyRoute: AuthenticatedReportsLegacyRoute,
   AuthenticatedSettingsImportRoute: AuthenticatedSettingsImportRoute,
   AuthenticatedApplicationsIndexRoute: AuthenticatedApplicationsIndexRoute,
   AuthenticatedApprovalsIndexRoute: AuthenticatedApprovalsIndexRoute,

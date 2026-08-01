@@ -16,6 +16,8 @@ import {
   Building2,
   Bell,
   Sparkles,
+  Activity,
+  DatabaseBackup,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,6 +45,8 @@ const NAV: NavItem[] = [
   { to: "/approvals", label: "อนุมัติ", icon: CheckSquare },
   { to: "/reports", label: "รายงาน", icon: BarChart3 },
   { to: "/assistant", label: "ผู้ช่วย AI", icon: Sparkles },
+  { to: "/status", label: "สถานะระบบ", icon: Activity },
+  { to: "/settings/import", label: "นำเข้าข้อมูลเดิม", icon: DatabaseBackup, admin: true },
   { to: "/settings", label: "ตั้งค่าระบบ", icon: Settings, admin: true },
 ];
 
