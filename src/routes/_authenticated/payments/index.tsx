@@ -223,12 +223,14 @@ function PaymentsPage() {
       if (cErr) throw cErr;
 
       // ลงสมุดรายรับอัตโนมัติ (แยกหมวดตามใบเสร็จ)
-      const lines: { category: CashCategory; amount: number }[] = [
+      const allLines: { category: CashCategory; amount: number }[] = [
         { category: "principal", amount: pPart },
         { category: "interest", amount: iPart },
         { category: "penalty", amount: penPart },
         ...FEE_FIELDS.map((f) => ({ category: f.key, amount: toSatang(fees[f.key] || "0") })),
-      ].filter((l) => l.amount > 0);
+      ];
+      const lines = allLines.filter((l) => l.amount > 0);
+
 
       const total = amt + FEE_FIELDS.reduce((s, f) => s + toSatang(fees[f.key] || "0"), 0);
 
