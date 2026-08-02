@@ -68,6 +68,12 @@ function DashboardPage() {
         supabase.from("branches").select("id, code, name").eq("active", true),
       ]);
 
+      const cash = await supabase
+        .from("cash_entries")
+        .select("direction, total_amount, entry_date")
+        .eq("voided", false)
+        .gte("entry_date", today.slice(0, 8) + "01");
+
       return {
         customerCount: customers.count ?? 0,
         contracts: (contracts.data ?? []) as ContractRow[],
@@ -75,6 +81,7 @@ function DashboardPage() {
         overdue: (overdue.data ?? []) as { total_amount: number; paid_amount: number }[],
         pendingApprovals: pendingAppr.count ?? 0,
         branches: (branches.data ?? []) as { id: string; code: string; name: string }[],
+        cash: (cash.data ?? []) as { direction: string; total_amount: number; entry_date: string }[],
       };
     },
   });
@@ -97,6 +104,16 @@ function DashboardPage() {
   const monthCollected = (data?.payments ?? [])
     .filter((p) => p.paid_at.startsWith(month))
     .reduce((s, p) => s + Number(p.amount), 0);
+
+  const cashRows = data?.cash ?? [];
+  const sumCash = (dir: string, onlyToday: boolean) =>
+    cashRows
+      .filter((r) => r.direction === dir && (!onlyToday || r.entry_date === today))
+      .reduce((s, r) => s + Number(r.total_amount), 0);
+  const incomeToday = sumCash("income", true);
+  const expenseToday = sumCash("expense", true);
+  const incomeMonth = sumCash("income", false);
+  const expenseMonth = sumCash("expense", false);
 
   // แนวโน้ม 6 เดือนย้อนหลัง
   const months: { key: string; label: string }[] = [];
@@ -194,6 +211,36 @@ function DashboardPage() {
         <StatCard
           label="ค่างวดเฉลี่ยต่อสัญญา"
           value={`฿${formatMoney(activeContracts.length ? Math.round(totalOutstanding / activeContracts.length) : 0)}`}
+          icon={<Wallet className="size-5" />}
+        />
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="รายรับวันนี้ (สมุดบัญชี)"
+          value={`฿${formatMoney(incomeToday)}`}
+          sub={`เดือนนี้ ฿${formatMoney(incomeMonth)}`}
+          tone="success"
+          icon={<Wallet className="size-5" />}
+        />
+        <StatCard
+          label="รายจ่ายวันนี้"
+          value={`฿${formatMoney(expenseToday)}`}
+          sub={`เดือนนี้ ฿${formatMoney(expenseMonth)}`}
+          tone="danger"
+          icon={<Wallet className="size-5" />}
+        />
+        <StatCard
+          label="กำไรขั้นต้นวันนี้"
+          value={`฿${formatMoney(incomeToday - expenseToday)}`}
+          sub={`เดือนนี้ ฿${formatMoney(incomeMonth - expenseMonth)}`}
+          tone={incomeToday - expenseToday >= 0 ? "success" : "danger"}
+          icon={<TrendingUp className="size-5" />}
+        />
+        <StatCard
+          label="ยอดตัดค่างวดวันนี้"
+          value={`฿${formatMoney(todayCollected)}`}
+          sub={`เดือนนี้ ฿${formatMoney(monthCollected)}`}
           icon={<Wallet className="size-5" />}
         />
       </div>
