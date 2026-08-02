@@ -1205,18 +1205,21 @@ export type Database = {
       system_settings: {
         Row: {
           description: string | null
+          id: number
           key: string
           updated_at: string
           value: Json
         }
         Insert: {
           description?: string | null
+          id?: number
           key: string
           updated_at?: string
           value?: Json
         }
         Update: {
           description?: string | null
+          id?: number
           key?: string
           updated_at?: string
           value?: Json
