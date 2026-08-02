@@ -26,6 +26,7 @@ import { Route as AuthenticatedFinanceExpensesRouteImport } from './routes/_auth
 import { Route as AuthenticatedNotificationsIndexRouteImport } from './routes/_authenticated/notifications/index'
 import { Route as AuthenticatedPaymentsIndexRouteImport } from './routes/_authenticated/payments/index'
 import { Route as AuthenticatedReportsIndexRouteImport } from './routes/_authenticated/reports/index'
+import { Route as AuthenticatedReportsReportIdRouteImport } from './routes/_authenticated/reports/$reportId'
 import { Route as AuthenticatedReportsLegacyRouteImport } from './routes/_authenticated/reports/legacy'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings/index'
 import { Route as AuthenticatedSettingsImportRouteImport } from './routes/_authenticated/settings/import'
@@ -129,6 +130,12 @@ const AuthenticatedReportsIndexRoute =
     path: '/reports/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedReportsReportIdRoute =
+  AuthenticatedReportsReportIdRouteImport.update({
+    id: '/reports/$reportId',
+    path: '/reports/$reportId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedReportsLegacyRoute =
   AuthenticatedReportsLegacyRouteImport.update({
     id: '/reports/legacy',
@@ -166,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
+  '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/reports/legacy': typeof AuthenticatedReportsLegacyRoute
   '/settings/import': typeof AuthenticatedSettingsImportRoute
   '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
@@ -189,6 +197,7 @@ export interface FileRoutesByTo {
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
+  '/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/reports/legacy': typeof AuthenticatedReportsLegacyRoute
   '/settings/import': typeof AuthenticatedSettingsImportRoute
   '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
@@ -214,6 +223,7 @@ export interface FileRoutesById {
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/_authenticated/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
+  '/_authenticated/reports/$reportId': typeof AuthenticatedReportsReportIdRoute
   '/_authenticated/reports/legacy': typeof AuthenticatedReportsLegacyRoute
   '/_authenticated/settings/import': typeof AuthenticatedSettingsImportRoute
   '/api/public/status-sync': typeof ApiPublicStatusSyncRoute
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/finance/expenses'
+    | '/reports/$reportId'
     | '/reports/legacy'
     | '/settings/import'
     | '/api/public/status-sync'
@@ -262,6 +273,7 @@ export interface FileRouteTypes {
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/finance/expenses'
+    | '/reports/$reportId'
     | '/reports/legacy'
     | '/settings/import'
     | '/api/public/status-sync'
@@ -286,6 +298,7 @@ export interface FileRouteTypes {
     | '/_authenticated/contracts/$contractId'
     | '/_authenticated/customers/$customerId'
     | '/_authenticated/finance/expenses'
+    | '/_authenticated/reports/$reportId'
     | '/_authenticated/reports/legacy'
     | '/_authenticated/settings/import'
     | '/api/public/status-sync'
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports/$reportId': {
+      id: '/_authenticated/reports/$reportId'
+      path: '/reports/$reportId'
+      fullPath: '/reports/$reportId'
+      preLoaderRoute: typeof AuthenticatedReportsReportIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reports/legacy': {
       id: '/_authenticated/reports/legacy'
       path: '/reports/legacy'
@@ -474,6 +494,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedContractsContractIdRoute: typeof AuthenticatedContractsContractIdRoute
   AuthenticatedCustomersCustomerIdRoute: typeof AuthenticatedCustomersCustomerIdRoute
   AuthenticatedFinanceExpensesRoute: typeof AuthenticatedFinanceExpensesRoute
+  AuthenticatedReportsReportIdRoute: typeof AuthenticatedReportsReportIdRoute
   AuthenticatedReportsLegacyRoute: typeof AuthenticatedReportsLegacyRoute
   AuthenticatedSettingsImportRoute: typeof AuthenticatedSettingsImportRoute
   AuthenticatedApplicationsIndexRoute: typeof AuthenticatedApplicationsIndexRoute
@@ -495,6 +516,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedContractsContractIdRoute: AuthenticatedContractsContractIdRoute,
   AuthenticatedCustomersCustomerIdRoute: AuthenticatedCustomersCustomerIdRoute,
   AuthenticatedFinanceExpensesRoute: AuthenticatedFinanceExpensesRoute,
+  AuthenticatedReportsReportIdRoute: AuthenticatedReportsReportIdRoute,
   AuthenticatedReportsLegacyRoute: AuthenticatedReportsLegacyRoute,
   AuthenticatedSettingsImportRoute: AuthenticatedSettingsImportRoute,
   AuthenticatedApplicationsIndexRoute: AuthenticatedApplicationsIndexRoute,

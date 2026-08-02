@@ -84,7 +84,9 @@ interface ContractJoin {
   vehicles: { plate_no: string | null } | null;
 }
 
-async function fetchContracts(statuses?: string[]) {
+type ContractStatus = "active" | "cancelled" | "closed" | "defaulted" | "overdue";
+
+async function fetchContracts(statuses?: ContractStatus[]) {
   let q = supabase
     .from("contracts")
     .select(
@@ -249,7 +251,7 @@ export async function runReport(id: string, p: ReportParams): Promise<ReportResu
         columns: CONTRACT_COLUMNS,
         rows: picked.map(contractRow),
         totalKeys: ["principal", "outstanding"],
-        note: kw ? undefined : "กรุณากรอกคำค้นหาเพื่อแสดงรายงาน",
+        ...(kw ? {} : { note: "กรุณากรอกคำค้นหาเพื่อแสดงรายงาน" }),
       };
     }
 
