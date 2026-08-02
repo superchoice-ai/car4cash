@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Receipt } from "lucide-react";
+import { Receipt, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,8 +21,9 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatMoney, formatThaiDate, todayISO, toSatang } from "@/lib/format";
+import { formatMoney, formatThaiDate, todayISO, toSatang, toBaht } from "@/lib/format";
 import { PAYMENT_METHOD_LABEL } from "@/lib/labels";
+import type { CashCategory } from "@/lib/cashbook";
 
 export const Route = createFileRoute("/_authenticated/payments/")({
   head: () => ({
@@ -36,6 +37,13 @@ export const Route = createFileRoute("/_authenticated/payments/")({
   component: PaymentsPage,
 });
 
+/** ช่องในใบเสร็จ ตรงกับระบบเดิม */
+const FEE_FIELDS: { key: CashCategory; label: string }[] = [
+  { key: "insurance", label: "ค่าประกัน" },
+  { key: "registration", label: "ค่าทะเบียน" },
+  { key: "follow_up", label: "ค่าติดตาม" },
+];
+
 function PaymentsPage() {
   const { profile, isHQ } = useAuth();
   const qc = useQueryClient();
@@ -46,6 +54,13 @@ function PaymentsPage() {
   const [method, setMethod] = useState("cash");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState("");
+
+  // ช่องแยกหมวดแบบใบเสร็จเดิม
+  const [principalPart, setPrincipalPart] = useState("");
+  const [interestPart, setInterestPart] = useState("");
+  const [penaltyPart, setPenaltyPart] = useState("");
+  const [fees, setFees] = useState<Partial<Record<CashCategory, string>>>({});
+  const [changeAmount, setChangeAmount] = useState("");
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ["payments"],
@@ -65,12 +80,65 @@ function PaymentsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("contracts")
-        .select("id, code, outstanding, installment_amount, customers:customer_id(full_name)")
+        .select("id, code, outstanding, installment_amount, customer_id, customers:customer_id(full_name)")
         .in("status", ["active", "overdue"])
         .order("code");
       return data ?? [];
     },
   });
+
+  const { data: openInstallments } = useQuery({
+    queryKey: ["installments-open", contractId],
+    enabled: !!contractId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("installments")
+        .select("*")
+        .eq("contract_id", contractId)
+        .neq("status", "paid")
+        .order("seq");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  /** คำนวณการตัดชำระตามลำดับงวด แล้วเติมช่องเงินต้น/ดอกเบี้ยให้ */
+  const autoAllocate = () => {
+    const amt = toSatang(amount || "0");
+    if (amt <= 0) {
+      toast.error("กรุณากรอกจำนวนเงินตัดค่างวดก่อน");
+      return;
+    }
+    let remaining = amt;
+    let p = 0;
+    let i = 0;
+    for (const ins of openInstallments ?? []) {
+      if (remaining <= 0) break;
+      const due = Number(ins.total_amount) - Number(ins.paid_amount);
+      const applied = Math.min(remaining, due);
+      remaining -= applied;
+      const ratio = Number(ins.total_amount) > 0 ? applied / Number(ins.total_amount) : 0;
+      p += Math.round(Number(ins.principal_amount) * ratio);
+      i += Math.round(Number(ins.interest_amount) * ratio);
+    }
+    setPrincipalPart(String(toBaht(p)));
+    setInterestPart(String(toBaht(i)));
+    toast.success("คำนวณช่องเงินต้น/ดอกเบี้ยให้แล้ว แก้ไขได้ตามจริง");
+  };
+
+  const feeTotal = FEE_FIELDS.reduce((s, f) => s + toSatang(fees[f.key] || "0"), 0);
+  const receiptTotal = toSatang(amount || "0") + feeTotal;
+
+  const resetForm = () => {
+    setAmount("");
+    setReference("");
+    setNote("");
+    setPrincipalPart("");
+    setInterestPart("");
+    setPenaltyPart("");
+    setFees({});
+    setChangeAmount("");
+  };
 
   const receive = useMutation({
     mutationFn: async () => {
@@ -94,8 +162,8 @@ function PaymentsPage() {
       if (iErr) throw iErr;
 
       let remaining = amt;
-      let principalPart = 0;
-      let interestPart = 0;
+      let autoPrincipal = 0;
+      let autoInterest = 0;
       let firstInstallmentId: string | null = null;
 
       for (const ins of installments ?? []) {
@@ -106,8 +174,8 @@ function PaymentsPage() {
         if (!firstInstallmentId) firstInstallmentId = ins.id;
 
         const ratio = ins.total_amount > 0 ? applied / ins.total_amount : 0;
-        principalPart += Math.round(ins.principal_amount * ratio);
-        interestPart += Math.round(ins.interest_amount * ratio);
+        autoPrincipal += Math.round(ins.principal_amount * ratio);
+        autoInterest += Math.round(ins.interest_amount * ratio);
 
         const newPaid = ins.paid_amount + applied;
         const { error } = await supabase
@@ -121,20 +189,29 @@ function PaymentsPage() {
         if (error) throw error;
       }
 
-      const { error: pErr } = await supabase.from("payments").insert({
-        branch_id: profile.branch_id,
-        receipt_no: receiptNo as string,
-        contract_id: contractId,
-        installment_id: firstInstallmentId,
-        paid_at: paidAt,
-        amount: amt,
-        principal_part: principalPart,
-        interest_part: interestPart,
-        method,
-        reference: reference || null,
-        note: note || null,
-        received_by: profile.id,
-      });
+      // ถ้าผู้ใช้กรอกช่องแยกเอง ให้ใช้ค่าที่กรอก มิฉะนั้นใช้ค่าที่คำนวณอัตโนมัติ
+      const pPart = principalPart.trim() ? toSatang(principalPart) : autoPrincipal;
+      const iPart = interestPart.trim() ? toSatang(interestPart) : autoInterest;
+      const penPart = toSatang(penaltyPart || "0");
+
+      const { data: created, error: pErr } = await supabase
+        .from("payments")
+        .insert({
+          branch_id: profile.branch_id,
+          receipt_no: receiptNo as string,
+          contract_id: contractId,
+          installment_id: firstInstallmentId,
+          paid_at: paidAt,
+          amount: amt,
+          principal_part: pPart,
+          interest_part: iPart,
+          method,
+          reference: reference || null,
+          note: note || null,
+          received_by: profile.id,
+        })
+        .select("id")
+        .single();
       if (pErr) throw pErr;
 
       const contract = (activeContracts ?? []).find((c) => c.id === contractId);
@@ -144,13 +221,57 @@ function PaymentsPage() {
         .update({ outstanding: newOutstanding, status: newOutstanding === 0 ? "closed" : "active" })
         .eq("id", contractId);
       if (cErr) throw cErr;
+
+      // ลงสมุดรายรับอัตโนมัติ (แยกหมวดตามใบเสร็จ)
+      const allLines: { category: CashCategory; amount: number }[] = [
+        { category: "principal", amount: pPart },
+        { category: "interest", amount: iPart },
+        { category: "penalty", amount: penPart },
+        ...FEE_FIELDS.map((f) => ({ category: f.key, amount: toSatang(fees[f.key] || "0") })),
+      ];
+      const lines = allLines.filter((l) => l.amount > 0);
+
+
+      const total = amt + FEE_FIELDS.reduce((s, f) => s + toSatang(fees[f.key] || "0"), 0);
+
+      const { data: entry, error: eErr } = await supabase
+        .from("cash_entries")
+        .insert({
+          branch_id: profile.branch_id,
+          direction: "income",
+          doc_no: receiptNo as string,
+          entry_date: paidAt,
+          party_name: contract?.customers?.full_name ?? "",
+          customer_id: contract?.customer_id ?? null,
+          contract_id: contractId,
+          payment_id: created.id,
+          method,
+          total_amount: total,
+          change_amount: toSatang(changeAmount || "0"),
+          note: note || null,
+          created_by: profile.id,
+        })
+        .select("id")
+        .single();
+      if (eErr) throw eErr;
+
+      if (lines.length > 0) {
+        const { error: lErr } = await supabase.from("cash_entry_lines").insert(
+          lines.map((l) => ({
+            entry_id: entry.id,
+            branch_id: profile.branch_id!,
+            direction: "income" as const,
+            category: l.category,
+            amount: l.amount,
+          })),
+        );
+        if (lErr) throw lErr;
+      }
     },
     onSuccess: () => {
       toast.success("บันทึกการรับชำระเรียบร้อย");
       setOpen(false);
-      setAmount("");
-      setReference("");
-      setNote("");
+      resetForm();
       void qc.invalidateQueries();
     },
     onError: (e: Error) => toast.error(e.message),
@@ -162,7 +283,7 @@ function PaymentsPage() {
     <div>
       <PageHeader
         title="รับชำระเงิน"
-        description="บันทึกการรับชำระค่างวด ระบบจะตัดยอดตามลำดับงวดให้อัตโนมัติ"
+        description="บันทึกการรับชำระค่างวด ระบบจะตัดยอดตามลำดับงวดและลงสมุดรายรับให้อัตโนมัติ"
         actions={
           <Button onClick={() => setOpen(true)}>
             <Receipt className="size-4" /> รับชำระใหม่
@@ -193,6 +314,8 @@ function PaymentsPage() {
                     <TableHead>วันที่ชำระ</TableHead>
                     <TableHead>ช่องทาง</TableHead>
                     {isHQ && <TableHead>สาขา</TableHead>}
+                    <TableHead className="text-right">เงินต้น</TableHead>
+                    <TableHead className="text-right">ดอกเบี้ย</TableHead>
                     <TableHead className="text-right">จำนวนเงิน</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -205,6 +328,8 @@ function PaymentsPage() {
                       <TableCell className="tabular">{formatThaiDate(p.paid_at)}</TableCell>
                       <TableCell>{PAYMENT_METHOD_LABEL[p.method] ?? p.method}</TableCell>
                       {isHQ && <TableCell>{p.branches?.name ?? "-"}</TableCell>}
+                      <TableCell className="tabular text-right">{formatMoney(p.principal_part)}</TableCell>
+                      <TableCell className="tabular text-right">{formatMoney(p.interest_part)}</TableCell>
                       <TableCell className="tabular text-right font-medium">฿{formatMoney(p.amount)}</TableCell>
                     </TableRow>
                   ))}
@@ -216,13 +341,13 @@ function PaymentsPage() {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>บันทึกการรับชำระ</DialogTitle>
-            <DialogDescription>ระบบจะตัดชำระงวดที่ค้างเรียงตามลำดับ</DialogDescription>
+            <DialogDescription>ระบบจะตัดชำระงวดที่ค้างเรียงตามลำดับ และแยกช่องรายรับตามใบเสร็จเดิม</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-3">
+          <div className="grid max-h-[70vh] gap-3 overflow-y-auto pr-1">
             <div className="space-y-1.5">
               <Label>สัญญา *</Label>
               <Select value={contractId} onValueChange={setContractId}>
@@ -243,15 +368,58 @@ function PaymentsPage() {
                 </p>
               )}
             </div>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label>จำนวนเงิน (บาท) *</Label>
+                <Label>จำนวนเงินตัดค่างวด (บาท) *</Label>
                 <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
               </div>
               <div className="space-y-1.5">
                 <Label>วันที่ชำระ</Label>
                 <Input type="date" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
               </div>
+            </div>
+
+            <div className="rounded-md border p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-sm font-medium">แยกช่องรายรับ (บาท)</p>
+                <Button type="button" variant="outline" size="sm" onClick={autoAllocate}>
+                  <Calculator className="size-4" /> คำนวณอัตโนมัติ
+                </Button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">เงินต้น</Label>
+                  <Input type="number" value={principalPart} onChange={(e) => setPrincipalPart(e.target.value)} placeholder="0.00" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">ดอกเบี้ย</Label>
+                  <Input type="number" value={interestPart} onChange={(e) => setInterestPart(e.target.value)} placeholder="0.00" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">ค่าปรับ</Label>
+                  <Input type="number" value={penaltyPart} onChange={(e) => setPenaltyPart(e.target.value)} placeholder="0.00" />
+                </div>
+                {FEE_FIELDS.map((f) => (
+                  <div key={f.key} className="space-y-1.5">
+                    <Label className="text-xs">{f.label}</Label>
+                    <Input
+                      type="number"
+                      value={fees[f.key] ?? ""}
+                      onChange={(e) => setFees((s) => ({ ...s, [f.key]: e.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                ))}
+                <div className="space-y-1.5">
+                  <Label className="text-xs">เงินทอน</Label>
+                  <Input type="number" value={changeAmount} onChange={(e) => setChangeAmount(e.target.value)} placeholder="0.00" />
+                </div>
+              </div>
+              <p className="tabular mt-3 text-right text-sm font-bold">รวมรับเงินตามใบเสร็จ ฿{formatMoney(receiptTotal)}</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>ช่องทาง</Label>
                 <Select value={method} onValueChange={setMethod}>

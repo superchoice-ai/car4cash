@@ -18,6 +18,9 @@ import {
   Sparkles,
   Activity,
   DatabaseBackup,
+  Scale,
+  ArrowUpCircle,
+
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,7 +44,10 @@ const NAV: NavItem[] = [
   { to: "/applications", label: "คำขอสินเชื่อ", icon: FileText },
   { to: "/contracts", label: "สัญญา", icon: FileSignature },
   { to: "/payments", label: "รับชำระ", icon: Wallet },
+  { to: "/finance", label: "สมุดรายรับ-รายจ่าย", icon: Scale },
+  { to: "/finance/expenses", label: "บันทึกรายจ่าย", icon: ArrowUpCircle },
   { to: "/collections", label: "ติดตามหนี้", icon: PhoneCall },
+
   { to: "/approvals", label: "อนุมัติ", icon: CheckSquare },
   { to: "/reports", label: "รายงาน", icon: BarChart3 },
   { to: "/assistant", label: "ผู้ช่วย AI", icon: Sparkles },
