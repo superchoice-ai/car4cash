@@ -189,6 +189,146 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_entries: {
+        Row: {
+          branch_id: string
+          change_amount: number
+          contract_id: string | null
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          direction: Database["public"]["Enums"]["cash_direction"]
+          doc_no: string
+          entry_date: string
+          id: string
+          legacy_code: string | null
+          method: string
+          note: string | null
+          party_name: string
+          payment_id: string | null
+          total_amount: number
+          updated_at: string
+          voided: boolean
+        }
+        Insert: {
+          branch_id: string
+          change_amount?: number
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          direction: Database["public"]["Enums"]["cash_direction"]
+          doc_no: string
+          entry_date?: string
+          id?: string
+          legacy_code?: string | null
+          method?: string
+          note?: string | null
+          party_name?: string
+          payment_id?: string | null
+          total_amount?: number
+          updated_at?: string
+          voided?: boolean
+        }
+        Update: {
+          branch_id?: string
+          change_amount?: number
+          contract_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          direction?: Database["public"]["Enums"]["cash_direction"]
+          doc_no?: string
+          entry_date?: string
+          id?: string
+          legacy_code?: string | null
+          method?: string
+          note?: string | null
+          party_name?: string
+          payment_id?: string | null
+          total_amount?: number
+          updated_at?: string
+          voided?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_entries_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_entries_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_entries_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_entries_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_entry_lines: {
+        Row: {
+          amount: number
+          branch_id: string
+          category: Database["public"]["Enums"]["cash_category"]
+          created_at: string
+          direction: Database["public"]["Enums"]["cash_direction"]
+          entry_id: string
+          id: string
+          note: string | null
+        }
+        Insert: {
+          amount?: number
+          branch_id: string
+          category: Database["public"]["Enums"]["cash_category"]
+          created_at?: string
+          direction: Database["public"]["Enums"]["cash_direction"]
+          entry_id: string
+          id?: string
+          note?: string | null
+        }
+        Update: {
+          amount?: number
+          branch_id?: string
+          category?: Database["public"]["Enums"]["cash_category"]
+          created_at?: string
+          direction?: Database["public"]["Enums"]["cash_direction"]
+          entry_id?: string
+          id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_entry_lines_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_entry_lines_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "cash_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_activities: {
         Row: {
           acted_at: string
@@ -1364,6 +1504,19 @@ export type Database = {
         | "restructure"
         | "payment_void"
         | "other"
+      cash_category:
+        | "principal"
+        | "interest"
+        | "penalty"
+        | "insurance"
+        | "registration"
+        | "follow_up"
+        | "salary"
+        | "office"
+        | "loan_repay"
+        | "inter_branch"
+        | "other"
+      cash_direction: "income" | "expense"
       contract_status:
         | "active"
         | "closed"
@@ -1520,6 +1673,20 @@ export const Constants = {
         "payment_void",
         "other",
       ],
+      cash_category: [
+        "principal",
+        "interest",
+        "penalty",
+        "insurance",
+        "registration",
+        "follow_up",
+        "salary",
+        "office",
+        "loan_repay",
+        "inter_branch",
+        "other",
+      ],
+      cash_direction: ["income", "expense"],
       contract_status: [
         "active",
         "closed",
