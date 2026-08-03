@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Printer } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState } from "@/components/Common";
 import { PrintReport } from "@/components/PrintReport";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/_authenticated/reports/$reportId")({
 function ReportViewPage() {
   const { reportId } = Route.useParams();
   const { branch } = useAuth();
+  const { branchId, scopeName } = useBranchFilter();
   const def = getReport(reportId);
 
   const monthStart = todayISO().slice(0, 8) + "01";
@@ -38,9 +40,9 @@ function ReportViewPage() {
   const [keyword, setKeyword] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["report", reportId, from, to, keyword],
+    queryKey: ["report", reportId, from, to, keyword, branchId],
     enabled: !!def,
-    queryFn: () => runReport(reportId, { from, to, keyword }),
+    queryFn: () => runReport(reportId, { from, to, keyword, branchId }),
   });
 
   if (!def) return <EmptyState title="ไม่พบรายงานนี้" description="กลับไปเลือกรายงานจากเมนูรายงานผล" />;
@@ -94,7 +96,7 @@ function ReportViewPage() {
 
       <PrintReport
         title={def.title}
-        branchName={branch?.name ?? null}
+        branchName={scopeName || branch?.name || null}
         periodText={def.param === "range" ? `${formatThaiDate(from)} ถึง ${formatThaiDate(to)}` : `ณ ${formatThaiDate(todayISO())}`}
         columns={columns.length}
       >

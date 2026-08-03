@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { FileBarChart, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, StatCard } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,14 +25,17 @@ export const Route = createFileRoute("/_authenticated/reports/")({
 
 function ReportsPage() {
   const today = todayISO();
+  const { branchId, scopeName } = useBranchFilter();
 
   const { data } = useQuery({
-    queryKey: ["report-summary", today],
+    queryKey: ["report-summary", today, branchId],
     queryFn: async () => {
+      const bf = <T extends { eq: (c: string, v: string) => T }>(q: T): T =>
+        branchId ? q.eq("branch_id", branchId) : q;
       const [inc, exp, ctr] = await Promise.all([
-        supabase.from("cash_entries").select("total_amount").eq("direction", "income").eq("voided", false).eq("entry_date", today),
-        supabase.from("cash_entries").select("total_amount").eq("direction", "expense").eq("voided", false).eq("entry_date", today),
-        supabase.from("contracts").select("outstanding").in("status", ["active", "overdue"]),
+        bf(supabase.from("cash_entries").select("total_amount").eq("direction", "income").eq("voided", false).eq("entry_date", today)),
+        bf(supabase.from("cash_entries").select("total_amount").eq("direction", "expense").eq("voided", false).eq("entry_date", today)),
+        bf(supabase.from("contracts").select("outstanding").in("status", ["active", "overdue"])),
       ]);
       return {
         income: (inc.data ?? []).reduce((s, r) => s + Number(r.total_amount), 0),
@@ -47,7 +51,7 @@ function ReportsPage() {
     <div>
       <PageHeader
         title="รายงานผล"
-        description={`เลือกรายงานที่ต้องการพิมพ์ · ข้อมูล ณ วันที่ ${formatThaiDate(today)}`}
+        description={`เลือกรายงานที่ต้องการพิมพ์ · ขอบเขต: ${scopeName} · ข้อมูล ณ วันที่ ${formatThaiDate(today)}`}
         actions={
           <>
             <Button asChild variant="outline">
