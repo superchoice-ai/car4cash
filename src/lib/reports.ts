@@ -375,7 +375,7 @@ export async function runReport(id: string, p: ReportParams): Promise<ReportResu
     }
 
     case "debtors-outstanding": {
-      const contracts = await fetchContracts(["active", "overdue"]);
+      const contracts = await fetchContracts(["active", "overdue"], p.branchId);
       return {
         columns: CONTRACT_COLUMNS,
         rows: contracts.filter((c) => Number(c.outstanding) > 0).map(contractRow),
