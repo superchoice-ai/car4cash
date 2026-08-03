@@ -16,6 +16,8 @@ export interface ReportParams {
   from: string;
   to: string;
   keyword: string;
+  /** null = รวมทุกสาขา */
+  branchId?: string | null;
 }
 
 export interface ReportResult {
@@ -86,7 +88,7 @@ interface ContractJoin {
 
 type ContractStatus = "active" | "cancelled" | "closed" | "defaulted" | "overdue";
 
-async function fetchContracts(statuses?: ContractStatus[]) {
+async function fetchContracts(statuses: ContractStatus[] | undefined, branchId: string | null | undefined) {
   let q = supabase
     .from("contracts")
     .select(
@@ -95,6 +97,7 @@ async function fetchContracts(statuses?: ContractStatus[]) {
     .order("code")
     .limit(1000);
   if (statuses) q = q.in("status", statuses);
+  if (branchId) q = q.eq("branch_id", branchId);
   const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as unknown as ContractJoin[];
@@ -112,14 +115,16 @@ const contractRow = (c: ContractJoin) => ({
 });
 
 /** จำนวนเดือนที่ค้างชำระโดยประมาณ จากงวดที่เกินกำหนดและยังไม่ปิด */
-async function overdueBuckets() {
+async function overdueBuckets(branchId: string | null | undefined) {
   const today = todayISO();
-  const { data, error } = await supabase
+  let iq = supabase
     .from("installments")
     .select("contract_id, due_date, total_amount, paid_amount, status")
     .lt("due_date", today)
     .neq("status", "paid")
     .limit(5000);
+  if (branchId) iq = iq.eq("branch_id", branchId);
+  const { data, error } = await iq;
   if (error) throw error;
   const map = new Map<string, { count: number; amount: number; oldest: string }>();
   for (const i of data ?? []) {
@@ -132,8 +137,11 @@ async function overdueBuckets() {
   return map;
 }
 
-async function overdueReport(min: number, max: number, envelope: boolean): Promise<ReportResult> {
-  const [contracts, buckets] = await Promise.all([fetchContracts(["active", "overdue"]), overdueBuckets()]);
+async function overdueReport(min: number, max: number, envelope: boolean, p: ReportParams): Promise<ReportResult> {
+  const [contracts, buckets] = await Promise.all([
+    fetchContracts(["active", "overdue"], p.branchId),
+    overdueBuckets(p.branchId),
+  ]);
   const picked = contracts.filter((c) => {
     const b = buckets.get(c.id);
     if (!b) return false;
@@ -194,7 +202,7 @@ interface CashEntryJoin {
 }
 
 async function fetchCashEntries(direction: "income" | "expense", p: ReportParams) {
-  const { data, error } = await supabase
+  let ceq = supabase
     .from("cash_entries")
     .select("id, doc_no, entry_date, party_name, direction, total_amount, cash_entry_lines(category, amount)")
     .eq("direction", direction)
@@ -204,6 +212,8 @@ async function fetchCashEntries(direction: "income" | "expense", p: ReportParams
     .order("entry_date")
     .order("doc_no")
     .limit(2000);
+  if (p.branchId) ceq = ceq.eq("branch_id", p.branchId);
+  const { data, error } = await ceq;
   if (error) throw error;
   return (data ?? []) as unknown as CashEntryJoin[];
 }
@@ -236,7 +246,7 @@ async function categoryIncomeReport(cat: CashCategory, p: ReportParams): Promise
 export async function runReport(id: string, p: ReportParams): Promise<ReportResult> {
   switch (id) {
     case "personal": {
-      const contracts = await fetchContracts();
+      const contracts = await fetchContracts(undefined, p.branchId);
       const kw = p.keyword.trim().toLowerCase();
       const picked = kw
         ? contracts.filter(
@@ -354,13 +364,13 @@ export async function runReport(id: string, p: ReportParams): Promise<ReportResu
       return categoryIncomeReport("follow_up", p);
 
     case "closed-customers": {
-      const contracts = await fetchContracts(["closed"]);
+      const contracts = await fetchContracts(["closed"], p.branchId);
       return { columns: CONTRACT_COLUMNS, rows: contracts.map(contractRow), totalKeys: ["principal"] };
     }
 
     case "debtors":
     case "debtors-all": {
-      const contracts = await fetchContracts();
+      const contracts = await fetchContracts(undefined, p.branchId);
       return { columns: CONTRACT_COLUMNS, rows: contracts.map(contractRow), totalKeys: ["principal", "outstanding"] };
     }
 
@@ -374,18 +384,18 @@ export async function runReport(id: string, p: ReportParams): Promise<ReportResu
     }
 
     case "overdue-1-2":
-      return overdueReport(1, 3, false);
+      return overdueReport(1, 3, false, p);
     case "overdue-2-3":
-      return overdueReport(3, 4, false);
+      return overdueReport(3, 4, false, p);
     case "overdue-3plus":
-      return overdueReport(4, Infinity, false);
+      return overdueReport(4, Infinity, false, p);
     case "envelope-1-2":
-      return overdueReport(1, 3, true);
+      return overdueReport(1, 3, true, p);
     case "envelope-2-3":
-      return overdueReport(3, 4, true);
+      return overdueReport(3, 4, true, p);
 
     case "follow-up-cover": {
-      const [contracts, buckets] = await Promise.all([fetchContracts(["active", "overdue"]), overdueBuckets()]);
+      const [contracts, buckets] = await Promise.all([fetchContracts(["active", "overdue"], p.branchId), overdueBuckets(p.branchId)]);
       const picked = contracts.filter((c) => buckets.has(c.id));
       return {
         columns: [
@@ -409,13 +419,15 @@ export async function runReport(id: string, p: ReportParams): Promise<ReportResu
     }
 
     case "follow-up-log": {
-      const { data, error } = await supabase
+      let caq = supabase
         .from("collection_activities")
         .select("acted_at, channel, result, detail, promise_date, contracts:contract_id(code, customers:customer_id(full_name))")
         .gte("acted_at", p.from)
         .lte("acted_at", p.to)
         .order("acted_at", { ascending: false })
         .limit(1000);
+      if (p.branchId) caq = caq.eq("branch_id", p.branchId);
+      const { data, error } = await caq;
       if (error) throw error;
       return {
         columns: [
@@ -438,12 +450,14 @@ export async function runReport(id: string, p: ReportParams): Promise<ReportResu
     }
 
     case "blacklist": {
-      const { data, error } = await supabase
+      let bq = supabase
         .from("customers")
         .select("code, full_name, phone, address, note, status")
         .eq("status", "blacklist")
         .order("code")
         .limit(1000);
+      if (p.branchId) bq = bq.eq("branch_id", p.branchId);
+      const { data, error } = await bq;
       if (error) throw error;
       return {
         columns: [
