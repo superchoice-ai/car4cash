@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState } from "@/components/Common";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatThaiDateTime } from "@/lib/format";
@@ -19,10 +20,13 @@ export const Route = createFileRoute("/_authenticated/notifications/")({
 });
 
 function NotificationsPage() {
+  const { branchId } = useBranchFilter();
   const { data, isLoading } = useQuery({
-    queryKey: ["notifications"],
+    queryKey: ["notifications", branchId],
     queryFn: async () => {
-      const { data } = await supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(100);
+      let q = supabase.from("notifications").select("*").order("created_at", { ascending: false }).limit(100);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data } = await q;
       return data ?? [];
     },
   });
