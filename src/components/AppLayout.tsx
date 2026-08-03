@@ -57,11 +57,43 @@ const NAV: NavItem[] = [
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <BranchFilterProvider>
+      <AppShell>{children}</AppShell>
+    </BranchFilterProvider>
+  );
+}
+
+function BranchSwitcher() {
+  const { branchId, setBranchId, branches, canSelect, scopeName } = useBranchFilter();
+  if (!canSelect) {
+    return <span className="text-sm font-medium text-foreground">{scopeName}</span>;
+  }
+  return (
+    <Select value={branchId ?? "all"} onValueChange={(v) => setBranchId(v === "all" ? null : v)}>
+      <SelectTrigger className="h-8 w-[210px] text-sm" aria-label="เลือกสาขา">
+        <SelectValue placeholder="ทุกสาขา" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">ทุกสาขา (รวมทั้งบริษัท)</SelectItem>
+        {branches.map((b) => (
+          <SelectItem key={b.id} value={b.id}>
+            {b.code} · {b.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const { profile, branch, roles, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { branchId } = useBranchFilter();
+
 
   const { data: pendingCount } = useQuery({
     queryKey: ["approvals-pending-count"],
