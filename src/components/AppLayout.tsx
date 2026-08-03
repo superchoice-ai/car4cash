@@ -29,6 +29,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_LABEL } from "@/lib/labels";
+import { BranchFilterProvider, useBranchFilter } from "@/hooks/useBranchFilter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 interface NavItem {
   to: string;
@@ -57,35 +60,69 @@ const NAV: NavItem[] = [
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {
+  return (
+    <BranchFilterProvider>
+      <AppShell>{children}</AppShell>
+    </BranchFilterProvider>
+  );
+}
+
+function BranchSwitcher() {
+  const { branchId, setBranchId, branches, canSelect, scopeName } = useBranchFilter();
+  if (!canSelect) {
+    return <span className="text-sm font-medium text-foreground">{scopeName}</span>;
+  }
+  return (
+    <Select value={branchId ?? "all"} onValueChange={(v) => setBranchId(v === "all" ? null : v)}>
+      <SelectTrigger className="h-8 w-[210px] text-sm" aria-label="เลือกสาขา">
+        <SelectValue placeholder="ทุกสาขา" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">ทุกสาขา (รวมทั้งบริษัท)</SelectItem>
+        {branches.map((b) => (
+          <SelectItem key={b.id} value={b.id}>
+            {b.code} · {b.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const { profile, branch, roles, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { branchId } = useBranchFilter();
+
 
   const { data: pendingCount } = useQuery({
-    queryKey: ["approvals-pending-count"],
+    queryKey: ["approvals-pending-count", branchId],
     queryFn: async () => {
-      const { count } = await supabase
+      let q = supabase
         .from("approval_requests")
         .select("id", { count: "exact", head: true })
         .eq("status", "pending");
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { count } = await q;
       return count ?? 0;
     },
     refetchInterval: 60000,
   });
 
   const { data: unread } = useQuery({
-    queryKey: ["notifications-unread"],
+    queryKey: ["notifications-unread", branchId],
     queryFn: async () => {
-      const { count } = await supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .is("read_at", null);
+      let q = supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { count } = await q;
       return count ?? 0;
     },
     refetchInterval: 60000,
   });
+
 
   const items = NAV.filter((i) => (i.admin ? isAdmin : true));
 
@@ -180,9 +217,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </button>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Building2 className="size-4" />
-            <span className="font-medium text-foreground">{branch?.name ?? "-"}</span>
+            <BranchSwitcher />
             {branch?.is_hq && <Badge variant="secondary">สำนักงานใหญ่</Badge>}
           </div>
+
           <div className="ml-auto flex items-center gap-2">
             <Link to="/notifications" className="relative rounded-md p-2 hover:bg-muted" aria-label="การแจ้งเตือน">
               <Bell className="size-4" />

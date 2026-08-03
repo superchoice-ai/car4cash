@@ -5,6 +5,7 @@ import { FilePlus2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState, StatusPill } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/contracts/")({
 
 function ContractsPage() {
   const { profile, isHQ } = useAuth();
+  const { branchId } = useBranchFilter();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [appId, setAppId] = useState("");
@@ -45,13 +47,15 @@ function ContractsPage() {
   const [firstDue, setFirstDue] = useState(addMonths(todayISO(), 1));
 
   const { data: contracts, isLoading } = useQuery({
-    queryKey: ["contracts"],
+    queryKey: ["contracts", branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("contracts")
         .select("*, customers:customer_id(full_name), vehicles:vehicle_id(plate_no), branches:branch_id(name)")
         .order("created_at", { ascending: false })
         .limit(300);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },

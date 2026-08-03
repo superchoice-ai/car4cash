@@ -5,6 +5,7 @@ import { Receipt, Calculator } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,6 +47,7 @@ const FEE_FIELDS: { key: CashCategory; label: string }[] = [
 
 function PaymentsPage() {
   const { profile, isHQ } = useAuth();
+  const { branchId } = useBranchFilter();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [contractId, setContractId] = useState("");
@@ -63,26 +65,30 @@ function PaymentsPage() {
   const [changeAmount, setChangeAmount] = useState("");
 
   const { data: payments, isLoading } = useQuery({
-    queryKey: ["payments"],
+    queryKey: ["payments", branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("payments")
         .select("*, contracts:contract_id(code, customers:customer_id(full_name)), branches:branch_id(name)")
         .order("created_at", { ascending: false })
         .limit(300);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
 
   const { data: activeContracts } = useQuery({
-    queryKey: ["contracts-active"],
+    queryKey: ["contracts-active", branchId],
     queryFn: async () => {
-      const { data } = await supabase
+      let q = supabase
         .from("contracts")
         .select("id, code, outstanding, installment_amount, customer_id, customers:customer_id(full_name)")
         .in("status", ["active", "overdue"])
         .order("code");
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data } = await q;
       return data ?? [];
     },
   });

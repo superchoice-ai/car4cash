@@ -5,6 +5,7 @@ import { Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState, StatusPill } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,17 +28,20 @@ export const Route = createFileRoute("/_authenticated/approvals/")({
 
 function ApprovalsPage() {
   const { profile, canApprove } = useAuth();
+  const { branchId } = useBranchFilter();
   const qc = useQueryClient();
   const [note, setNote] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["approvals"],
+    queryKey: ["approvals", branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("approval_requests")
         .select("*, branches:branch_id(name)")
         .order("created_at", { ascending: false })
         .limit(200);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },

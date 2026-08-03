@@ -22,6 +22,7 @@ import {
 } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, StatCard } from "@/components/Common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,29 +51,37 @@ interface ContractRow {
 
 function DashboardPage() {
   const { isHQ, branch } = useAuth();
+  const { branchId, scopeName } = useBranchFilter();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard"],
+    queryKey: ["dashboard", branchId],
     queryFn: async () => {
       const today = todayISO();
+      const bf = <T extends { eq: (c: string, v: string) => T }>(q: T): T =>
+        branchId ? q.eq("branch_id", branchId) : q;
+
       const [customers, contracts, payments, overdue, pendingAppr, branches] = await Promise.all([
-        supabase.from("customers").select("id", { count: "exact", head: true }),
-        supabase.from("contracts").select("id, branch_id, principal, outstanding, status, created_at"),
-        supabase.from("payments").select("amount, paid_at, branch_id").eq("voided", false),
-        supabase
-          .from("installments")
-          .select("id, total_amount, paid_amount, due_date, contract_id")
-          .lt("due_date", today)
-          .in("status", ["unpaid", "partial", "overdue"]),
-        supabase.from("approval_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        bf(supabase.from("customers").select("id", { count: "exact", head: true })),
+        bf(supabase.from("contracts").select("id, branch_id, principal, outstanding, status, created_at")),
+        bf(supabase.from("payments").select("amount, paid_at, branch_id").eq("voided", false)),
+        bf(
+          supabase
+            .from("installments")
+            .select("id, total_amount, paid_amount, due_date, contract_id")
+            .lt("due_date", today)
+            .in("status", ["unpaid", "partial", "overdue"]),
+        ),
+        bf(supabase.from("approval_requests").select("id", { count: "exact", head: true }).eq("status", "pending")),
         supabase.from("branches").select("id, code, name").eq("active", true),
       ]);
 
-      const cash = await supabase
-        .from("cash_entries")
-        .select("direction, total_amount, entry_date")
-        .eq("voided", false)
-        .gte("entry_date", today.slice(0, 8) + "01");
+      const cash = await bf(
+        supabase
+          .from("cash_entries")
+          .select("direction, total_amount, entry_date")
+          .eq("voided", false)
+          .gte("entry_date", today.slice(0, 8) + "01"),
+      );
 
       return {
         customerCount: customers.count ?? 0,

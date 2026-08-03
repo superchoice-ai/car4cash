@@ -5,6 +5,7 @@ import { Plus, Trash2, Pencil, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState, StatCard } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +49,7 @@ type AmountMap = Partial<Record<CashCategory, string>>;
 
 function ExpensesPage() {
   const { profile, isHQ, isManager } = useAuth();
+  const { branchId } = useBranchFilter();
   const qc = useQueryClient();
 
   const [open, setOpen] = useState(false);
@@ -64,7 +66,7 @@ function ExpensesPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const { data: entries, isLoading } = useQuery({
-    queryKey: ["cash-expenses", from, to, keyword, categoryFilter],
+    queryKey: ["cash-expenses", from, to, keyword, categoryFilter, branchId],
     queryFn: async () => {
       let q = supabase
         .from("cash_entries")
@@ -75,6 +77,7 @@ function ExpensesPage() {
         .order("entry_date", { ascending: false })
         .order("doc_no", { ascending: false })
         .limit(500);
+      if (branchId) q = q.eq("branch_id", branchId);
       if (keyword.trim()) q = q.or(`doc_no.ilike.%${keyword}%,party_name.ilike.%${keyword}%`);
       const { data, error } = await q;
       if (error) throw error;
