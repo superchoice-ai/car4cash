@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState, StatusPill } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,19 +64,22 @@ const customerSchema = z.object({
 
 function CustomersPage() {
   const { profile, isHQ } = useAuth();
+  const { branchId } = useBranchFilter();
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [open, setOpen] = useState(false);
 
   const { data: customers, isLoading } = useQuery({
-    queryKey: ["customers"],
+    queryKey: ["customers", branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("customers")
         .select("id, code, full_name, national_id, phone, status, occupation, created_at, branch_id, branches:branch_id(code, name)")
         .order("created_at", { ascending: false })
         .limit(500);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as unknown as CustomerRow[];
     },

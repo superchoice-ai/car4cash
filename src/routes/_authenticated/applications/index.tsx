@@ -5,6 +5,7 @@ import { Plus, Send, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState, StatusPill } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,20 +40,23 @@ export const Route = createFileRoute("/_authenticated/applications/")({
 
 function ApplicationsPage() {
   const { profile, canApprove, isHQ } = useAuth();
+  const { branchId } = useBranchFilter();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { data: apps, isLoading } = useQuery({
-    queryKey: ["applications"],
+    queryKey: ["applications", branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("loan_applications")
         .select(
           "*, customers:customer_id(code, full_name), vehicles:vehicle_id(plate_no, brand, model, appraised_value), branches:branch_id(name)",
         )
         .order("created_at", { ascending: false })
         .limit(300);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
