@@ -758,6 +758,36 @@ export type Database = {
           },
         ]
       }
+      integration_secrets: {
+        Row: {
+          category: string
+          created_at: string
+          key: string
+          label: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          key: string
+          label: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          key?: string
+          label?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       legacy_customers: {
         Row: {
           address: string | null
@@ -1471,6 +1501,7 @@ export type Database = {
     }
     Functions: {
       can_access_branch: { Args: { _branch: string }; Returns: boolean }
+      delete_integration_secret: { Args: { _key: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1480,9 +1511,29 @@ export type Database = {
       }
       is_hq: { Args: { _user_id: string }; Returns: boolean }
       is_manager: { Args: never; Returns: boolean }
+      list_integration_secrets: {
+        Args: never
+        Returns: {
+          category: string
+          key: string
+          label: string
+          masked: string
+          updated_at: string
+        }[]
+      }
+      mask_secret: { Args: { _v: string }; Returns: string }
       my_branch: { Args: { _user_id: string }; Returns: string }
       next_doc_no: {
         Args: { _branch: string; _doc_type: string }
+        Returns: string
+      }
+      set_integration_secret: {
+        Args: {
+          _category: string
+          _key: string
+          _label: string
+          _value: string
+        }
         Returns: string
       }
     }
