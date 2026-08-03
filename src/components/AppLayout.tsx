@@ -29,6 +29,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ROLE_LABEL } from "@/lib/labels";
+import { BranchFilterProvider, useBranchFilter } from "@/hooks/useBranchFilter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 interface NavItem {
   to: string;
