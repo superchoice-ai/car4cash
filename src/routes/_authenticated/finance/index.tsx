@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Printer, ArrowDownCircle, ArrowUpCircle, Scale } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState, StatCard } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,7 @@ export const Route = createFileRoute("/_authenticated/finance/")({
 
 function CashbookPage() {
   const { isHQ, branch } = useAuth();
+  const { branchId, scopeName } = useBranchFilter();
   const monthStart = todayISO().slice(0, 8) + "01";
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(todayISO());
@@ -46,9 +48,9 @@ function CashbookPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["cashbook", from, to],
+    queryKey: ["cashbook", from, to, branchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("cash_entries")
         .select("*, branches:branch_id(name), cash_entry_lines(id, category, amount)")
         .gte("entry_date", from)
@@ -57,6 +59,8 @@ function CashbookPage() {
         .order("entry_date", { ascending: false })
         .order("doc_no", { ascending: false })
         .limit(1000);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },

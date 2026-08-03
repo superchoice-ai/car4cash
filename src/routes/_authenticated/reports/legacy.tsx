@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState } from "@/components/Common";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,16 +36,17 @@ type ReportKind = "receipts" | "customers";
 
 function LegacyReportPage() {
   const { branch } = useAuth();
+  const { branchId, scopeName } = useBranchFilter();
   const [kind, setKind] = useState<ReportKind>("receipts");
   const [from, setFrom] = useState(todayISO());
   const [to, setTo] = useState(todayISO());
   const [keyword, setKeyword] = useState("");
 
   const { data: receipts, isLoading: loadingR } = useQuery({
-    queryKey: ["legacy-receipts", from, to],
+    queryKey: ["legacy-receipts", from, to, branchId],
     enabled: kind === "receipts",
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("legacy_receipts")
         .select("*")
         .gte("paid_on", from)
@@ -52,16 +54,19 @@ function LegacyReportPage() {
         .order("paid_on")
         .order("bill_no")
         .limit(1000);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
 
   const { data: customers, isLoading: loadingC } = useQuery({
-    queryKey: ["legacy-customers", keyword],
+    queryKey: ["legacy-customers", keyword, branchId],
     enabled: kind === "customers",
     queryFn: async () => {
       let q = supabase.from("legacy_customers").select("*").order("legacy_code").limit(500);
+      if (branchId) q = q.eq("branch_id", branchId);
       if (keyword.trim())
         q = q.or(`legacy_code.ilike.%${keyword}%,full_name.ilike.%${keyword}%,plate_no.ilike.%${keyword}%`);
       const { data, error } = await q;
