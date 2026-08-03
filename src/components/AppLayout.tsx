@@ -215,9 +215,10 @@ function AppShell({ children }: { children: ReactNode }) {
           </button>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Building2 className="size-4" />
-            <span className="font-medium text-foreground">{branch?.name ?? "-"}</span>
+            <BranchSwitcher />
             {branch?.is_hq && <Badge variant="secondary">สำนักงานใหญ่</Badge>}
           </div>
+
           <div className="ml-auto flex items-center gap-2">
             <Link to="/notifications" className="relative rounded-md p-2 hover:bg-muted" aria-label="การแจ้งเตือน">
               <Bell className="size-4" />
