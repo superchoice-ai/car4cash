@@ -99,28 +99,30 @@ function AppShell({ children }: { children: ReactNode }) {
 
 
   const { data: pendingCount } = useQuery({
-    queryKey: ["approvals-pending-count"],
+    queryKey: ["approvals-pending-count", branchId],
     queryFn: async () => {
-      const { count } = await supabase
+      let q = supabase
         .from("approval_requests")
         .select("id", { count: "exact", head: true })
         .eq("status", "pending");
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { count } = await q;
       return count ?? 0;
     },
     refetchInterval: 60000,
   });
 
   const { data: unread } = useQuery({
-    queryKey: ["notifications-unread"],
+    queryKey: ["notifications-unread", branchId],
     queryFn: async () => {
-      const { count } = await supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .is("read_at", null);
+      let q = supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { count } = await q;
       return count ?? 0;
     },
     refetchInterval: 60000,
   });
+
 
   const items = NAV.filter((i) => (i.admin ? isAdmin : true));
 
