@@ -13,6 +13,7 @@ import { Loader2, Send } from "lucide-react";
 const KEYS = [
   { key: "LINE_LOGIN_CHANNEL_ID", label: "LINE Login – Channel ID", category: "line_login" },
   { key: "LINE_LOGIN_CHANNEL_SECRET", label: "LINE Login – Channel Secret", category: "line_login" },
+  { key: "LINE_LOGIN_REDIRECT_URI", label: "LINE Login – Callback URL (คงที่)", category: "line_login" },
   { key: "LINE_CHANNEL_ACCESS_TOKEN", label: "LINE OA – Channel Access Token", category: "line_oa" },
   { key: "LINE_CHANNEL_SECRET", label: "LINE OA – Channel Secret", category: "line_oa" },
 ] as const;
