@@ -32,6 +32,8 @@ import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedSettingsImportRouteImport } from './routes/_authenticated/settings/import'
 import { Route as AuthenticatedStatusIndexRouteImport } from './routes/_authenticated/status/index'
 import { Route as ApiPublicStatusSyncRouteImport } from './routes/api/public/status-sync'
+import { Route as ApiPublicAuthLineCallbackRouteImport } from './routes/api/public/auth/line/callback'
+import { Route as ApiPublicAuthLineStartRouteImport } from './routes/api/public/auth/line/start'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -165,6 +167,17 @@ const ApiPublicStatusSyncRoute = ApiPublicStatusSyncRouteImport.update({
   path: '/api/public/status-sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAuthLineCallbackRoute =
+  ApiPublicAuthLineCallbackRouteImport.update({
+    id: '/api/public/auth/line/callback',
+    path: '/api/public/auth/line/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicAuthLineStartRoute = ApiPublicAuthLineStartRouteImport.update({
+  id: '/api/public/auth/line/start',
+  path: '/api/public/auth/line/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -189,6 +202,8 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/status/': typeof AuthenticatedStatusIndexRoute
+  '/api/public/auth/line/callback': typeof ApiPublicAuthLineCallbackRoute
+  '/api/public/auth/line/start': typeof ApiPublicAuthLineStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -213,6 +228,8 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/status': typeof AuthenticatedStatusIndexRoute
+  '/api/public/auth/line/callback': typeof ApiPublicAuthLineCallbackRoute
+  '/api/public/auth/line/start': typeof ApiPublicAuthLineStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -239,6 +256,8 @@ export interface FileRoutesById {
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/status/': typeof AuthenticatedStatusIndexRoute
+  '/api/public/auth/line/callback': typeof ApiPublicAuthLineCallbackRoute
+  '/api/public/auth/line/start': typeof ApiPublicAuthLineStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -265,6 +284,8 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/settings/'
     | '/status/'
+    | '/api/public/auth/line/callback'
+    | '/api/public/auth/line/start'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -289,6 +310,8 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/status'
+    | '/api/public/auth/line/callback'
+    | '/api/public/auth/line/start'
   id:
     | '__root__'
     | '/'
@@ -314,6 +337,8 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
     | '/_authenticated/status/'
+    | '/api/public/auth/line/callback'
+    | '/api/public/auth/line/start'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -321,6 +346,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicStatusSyncRoute: typeof ApiPublicStatusSyncRoute
+  ApiPublicAuthLineCallbackRoute: typeof ApiPublicAuthLineCallbackRoute
+  ApiPublicAuthLineStartRoute: typeof ApiPublicAuthLineStartRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -486,6 +513,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStatusSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/auth/line/callback': {
+      id: '/api/public/auth/line/callback'
+      path: '/api/public/auth/line/callback'
+      fullPath: '/api/public/auth/line/callback'
+      preLoaderRoute: typeof ApiPublicAuthLineCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/auth/line/start': {
+      id: '/api/public/auth/line/start'
+      path: '/api/public/auth/line/start'
+      fullPath: '/api/public/auth/line/start'
+      preLoaderRoute: typeof ApiPublicAuthLineStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -541,6 +582,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicStatusSyncRoute: ApiPublicStatusSyncRoute,
+  ApiPublicAuthLineCallbackRoute: ApiPublicAuthLineCallbackRoute,
+  ApiPublicAuthLineStartRoute: ApiPublicAuthLineStartRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

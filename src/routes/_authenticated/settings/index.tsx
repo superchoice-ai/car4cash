@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/Common";
+import { LineSettings } from "@/components/LineSettings";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -31,7 +33,11 @@ function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title="ตั้งค่าระบบ" description="ข้อมูลสาขาและค่าตั้งต้นของระบบสินเชื่อ" />
+      <PageHeader title="ตั้งค่าระบบ" description="ข้อมูลสาขา ค่าตั้งต้น และการเชื่อมต่อ LINE" />
+
+      <LineSettings />
+
+
 
       <Card className="mb-4">
         <CardHeader className="pb-2">

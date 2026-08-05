@@ -34,6 +34,8 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
 
   useEffect(() => {
+    const err = new URLSearchParams(window.location.search).get("line_error");
+    if (err) toast.error(err);
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session) void navigate({ to: "/dashboard", replace: true });
     });
@@ -42,6 +44,7 @@ function AuthPage() {
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
 
   const validate = () => {
     const e = emailSchema.safeParse(email);
@@ -182,6 +185,18 @@ function AuthPage() {
             <Button variant="outline" className="w-full" onClick={googleSignIn} disabled={loading}>
               เข้าสู่ระบบด้วย Google
             </Button>
+
+            <Button
+              variant="outline"
+              className="mt-2 w-full border-[#06C755]/40 text-[#06C755] hover:bg-[#06C755]/10 hover:text-[#06C755]"
+              onClick={() => {
+                window.location.href = "/api/public/auth/line/start";
+              }}
+              disabled={loading}
+            >
+              เข้าสู่ระบบ / สมัครใช้งานด้วย LINE
+            </Button>
+
 
             <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="size-3.5" /> ข้อมูลถูกแยกตามสาขาและควบคุมสิทธิ์ทุกระดับ

@@ -31,7 +31,9 @@ export async function runStatusSync() {
   const byGuid = new Map((existing ?? []).map((e) => [e.guid, e]));
 
   const minRank = SEVERITY_RANK[cfg.line_notify_min_severity ?? "major"] ?? 3;
-  const lineToken = process.env["LINE_CHANNEL_ACCESS_TOKEN"];
+  const { getIntegrationSecret, LINE_SECRET_KEYS } = await import("./line.server");
+  const lineToken = await getIntegrationSecret(LINE_SECRET_KEYS.channelAccessToken);
+
   const { data: lineSetting } = await supabaseAdmin
     .from("system_settings")
     .select("value")
