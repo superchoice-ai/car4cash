@@ -186,6 +186,18 @@ function AuthPage() {
               เข้าสู่ระบบด้วย Google
             </Button>
 
+            <Button
+              variant="outline"
+              className="mt-2 w-full border-[#06C755]/40 text-[#06C755] hover:bg-[#06C755]/10 hover:text-[#06C755]"
+              onClick={() => {
+                window.location.href = "/api/public/auth/line/start";
+              }}
+              disabled={loading}
+            >
+              เข้าสู่ระบบ / สมัครใช้งานด้วย LINE
+            </Button>
+
+
             <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <ShieldCheck className="size-3.5" /> ข้อมูลถูกแยกตามสาขาและควบคุมสิทธิ์ทุกระดับ
             </p>
