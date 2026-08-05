@@ -42,10 +42,11 @@ export const Route = createFileRoute("/api/public/auth/line/callback")({
         if (!code) return fail("ไม่พบรหัสยืนยันจาก LINE");
         if (!state || !cookieState || state !== cookieState) return fail("สถานะการเข้าสู่ระบบไม่ถูกต้อง กรุณาลองใหม่");
 
-        const { getIntegrationSecret, LINE_SECRET_KEYS } = await import("@/lib/line.server");
-        const [clientId, clientSecret] = await Promise.all([
+        const { getIntegrationSecret, getLineRedirectUri, LINE_SECRET_KEYS } = await import("@/lib/line.server");
+        const [clientId, clientSecret, redirectUri] = await Promise.all([
           getIntegrationSecret(LINE_SECRET_KEYS.loginChannelId),
           getIntegrationSecret(LINE_SECRET_KEYS.loginChannelSecret),
+          getLineRedirectUri(origin),
         ]);
         if (!clientId || !clientSecret) return fail("ยังไม่ได้ตั้งค่า LINE Login Channel ID/Secret");
 
@@ -55,7 +56,7 @@ export const Route = createFileRoute("/api/public/auth/line/callback")({
           body: new URLSearchParams({
             grant_type: "authorization_code",
             code,
-            redirect_uri: `${origin}/api/public/auth/line/callback`,
+            redirect_uri: redirectUri,
             client_id: clientId,
             client_secret: clientSecret,
           }),

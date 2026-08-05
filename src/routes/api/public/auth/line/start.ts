@@ -5,7 +5,7 @@ export const Route = createFileRoute("/api/public/auth/line/start")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const { getIntegrationSecret, LINE_SECRET_KEYS } = await import("@/lib/line.server");
+        const { getIntegrationSecret, getLineRedirectUri, LINE_SECRET_KEYS } = await import("@/lib/line.server");
         const clientId = await getIntegrationSecret(LINE_SECRET_KEYS.loginChannelId);
         const origin = new URL(request.url).origin;
         if (!clientId) {
@@ -14,7 +14,8 @@ export const Route = createFileRoute("/api/public/auth/line/start")({
 
         const state = crypto.randomUUID();
         const nonce = crypto.randomUUID();
-        const redirectUri = `${origin}/api/public/auth/line/callback`;
+        const redirectUri = await getLineRedirectUri(origin);
+
 
         const authorizeUrl = new URL("https://access.line.me/oauth2/v2.1/authorize");
         authorizeUrl.searchParams.set("response_type", "code");
