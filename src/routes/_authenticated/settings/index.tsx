@@ -31,7 +31,11 @@ function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title="ตั้งค่าระบบ" description="ข้อมูลสาขาและค่าตั้งต้นของระบบสินเชื่อ" />
+      <PageHeader title="ตั้งค่าระบบ" description="ข้อมูลสาขา ค่าตั้งต้น และการเชื่อมต่อ LINE" />
+
+      <LineSettings />
+
+
 
       <Card className="mb-4">
         <CardHeader className="pb-2">
