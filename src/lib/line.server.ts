@@ -5,6 +5,7 @@ export const LINE_SECRET_KEYS = {
   channelSecret: "LINE_CHANNEL_SECRET",
   loginChannelId: "LINE_LOGIN_CHANNEL_ID",
   loginChannelSecret: "LINE_LOGIN_CHANNEL_SECRET",
+  loginRedirectUri: "LINE_LOGIN_REDIRECT_URI",
 } as const;
 
 /** อ่านคีย์จากตาราง integration_secrets ก่อน ถ้าไม่มีค่อย fallback ไปที่ environment */
@@ -15,6 +16,16 @@ export async function getIntegrationSecret(key: string): Promise<string | null> 
   const env = process.env[key];
   return env && env.trim() ? env.trim() : null;
 }
+
+/**
+ * Callback URL ที่ต้องตรงกับที่ลงทะเบียนใน LINE Developers Console แบบเป๊ะ ๆ
+ * ถ้าตั้งค่า LINE_LOGIN_REDIRECT_URI ไว้ จะใช้ค่านั้นเสมอ (ไม่ต้องลงทะเบียนทุกโดเมน)
+ */
+export async function getLineRedirectUri(origin: string): Promise<string> {
+  const fixed = await getIntegrationSecret(LINE_SECRET_KEYS.loginRedirectUri);
+  return (fixed || `${origin}/api/public/auth/line/callback`).trim();
+}
+
 
 export interface LinePushResult {
   ok: boolean;
