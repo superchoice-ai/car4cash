@@ -34,6 +34,8 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
 
   useEffect(() => {
+    const err = new URLSearchParams(window.location.search).get("line_error");
+    if (err) toast.error(err);
     void supabase.auth.getSession().then(({ data }) => {
       if (data.session) void navigate({ to: "/dashboard", replace: true });
     });
@@ -42,6 +44,7 @@ function AuthPage() {
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
 
   const validate = () => {
     const e = emailSchema.safeParse(email);
