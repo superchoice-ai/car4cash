@@ -64,7 +64,7 @@ export const saveLineRecipients = createServerFn({ method: "POST" })
 
     const { error: writeError } = await supabaseAdmin
       .from("system_settings")
-      .upsert({ key: "line_notify", value }, { onConflict: "key" });
+      .upsert({ key: "line_notify", value: value as any }, { onConflict: "key" });
     if (writeError) throw writeError;
 
     return { ok: true, enabled: value.enabled, to: targets };
