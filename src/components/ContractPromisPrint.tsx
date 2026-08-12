@@ -1,4 +1,5 @@
 import { formatMoney, formatThaiDate } from "@/lib/format";
+import "./ContractPromisPrint.css";
 
 type ContractPrintData = {
   code: string;
@@ -96,7 +97,7 @@ export function ContractPromisPrint({ contract }: { contract: ContractPrintData 
   const contractPlace = contract.branches?.address?.trim() || "—";
 
   return (
-    <article className="contract-print-sheet bg-white text-black" aria-label={`สัญญากู้ยืมเงิน ${contract.code}`}>
+    <article className="contract-print-sheet" aria-label={`สัญญากู้ยืมเงิน ${contract.code}`}>
       <header className="contract-heading">
         <div className="contract-no">เลขที่ <b>{contract.code}</b></div>
         <h1>สัญญากู้ยืมเงิน</h1>
