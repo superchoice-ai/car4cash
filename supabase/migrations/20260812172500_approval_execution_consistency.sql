@@ -19,17 +19,17 @@ DECLARE
   new_rate numeric;
   new_term int;
   ctr contracts%ROWTYPE;
-  principal bigint;
-  interest_per_month bigint;
-  total_payable bigint;
-  installment bigint;
-  principal_per_month bigint;
-  principal_left bigint;
-  paid_total bigint;
-  seq_no int;
-  row_principal bigint;
-  row_total bigint;
-  row_interest bigint;
+  v_principal bigint;
+  v_interest_per_month bigint;
+  v_total_payable bigint;
+  v_installment bigint;
+  v_principal_per_month bigint;
+  v_principal_left bigint;
+  v_paid_total bigint;
+  v_seq_no int;
+  v_row_principal bigint;
+  v_row_total bigint;
+  v_row_interest bigint;
 BEGIN
   IF actor IS NULL THEN RAISE EXCEPTION 'Unauthenticated'; END IF;
   IF NOT (public.is_manager() OR public.has_role(actor,'approver')) THEN
@@ -51,7 +51,6 @@ BEGIN
     RETURN jsonb_build_object('ok',true,'executed',false,'status','rejected');
   END IF;
 
-  -- Standard loan approval path.
   IF req.type = 'loan_approval' AND req.entity_table = 'loan_applications' THEN
     UPDATE loan_applications
       SET status='approved',
@@ -76,7 +75,6 @@ BEGIN
       occupation = coalesce(p->'changes'->>'occupation', occupation)
     WHERE id=req.entity_id;
 
-    -- Keep guarantor snapshots aligned only where the guarantor is explicitly linked to this customer.
     UPDATE loan_guarantors g SET
       full_name = c.full_name,
       national_id = c.national_id,
@@ -112,42 +110,41 @@ BEGIN
     RETURNING requested_amount,approved_amount,interest_rate,term_months
       INTO new_requested,new_approved,new_rate,new_term;
 
-    -- If a contract already exists and no payment has ever been posted, keep all financial tables synchronized.
     FOR ctr IN SELECT * FROM contracts WHERE application_id=req.entity_id FOR UPDATE LOOP
       SELECT count(*) INTO payment_count FROM payments WHERE contract_id=ctr.id AND voided=false;
       IF payment_count = 0 THEN
-        principal := coalesce(new_approved,new_requested);
-        interest_per_month := round(principal * new_rate / 100.0);
-        total_payable := principal + interest_per_month * new_term;
-        installment := round(total_payable::numeric / greatest(new_term,1));
-        principal_per_month := floor(principal::numeric / greatest(new_term,1));
+        v_principal := coalesce(new_approved,new_requested);
+        v_interest_per_month := round(v_principal * new_rate / 100.0);
+        v_total_payable := v_principal + v_interest_per_month * new_term;
+        v_installment := round(v_total_payable::numeric / greatest(new_term,1));
+        v_principal_per_month := floor(v_principal::numeric / greatest(new_term,1));
 
-        UPDATE contracts SET
-          principal=principal,
+        UPDATE contracts c SET
+          principal=v_principal,
           interest_rate=new_rate,
           term_months=new_term,
-          installment_amount=installment,
-          total_payable=total_payable,
-          outstanding=total_payable,
+          installment_amount=v_installment,
+          total_payable=v_total_payable,
+          outstanding=v_total_payable,
           end_date=(coalesce(ctr.first_due_date,ctr.start_date) + ((new_term-1)||' months')::interval)::date
-        WHERE id=ctr.id;
+        WHERE c.id=ctr.id;
 
-        DELETE FROM installments WHERE contract_id=ctr.id;
-        principal_left := principal;
-        paid_total := 0;
-        FOR seq_no IN 1..new_term LOOP
-          IF seq_no = new_term THEN
-            row_principal := principal_left;
-            row_total := total_payable - paid_total;
+        DELETE FROM installments i WHERE i.contract_id=ctr.id;
+        v_principal_left := v_principal;
+        v_paid_total := 0;
+        FOR v_seq_no IN 1..new_term LOOP
+          IF v_seq_no = new_term THEN
+            v_row_principal := v_principal_left;
+            v_row_total := v_total_payable - v_paid_total;
           ELSE
-            row_principal := principal_per_month;
-            row_total := installment;
+            v_row_principal := v_principal_per_month;
+            v_row_total := v_installment;
           END IF;
-          row_interest := row_total - row_principal;
+          v_row_interest := v_row_total - v_row_principal;
           INSERT INTO installments(branch_id,contract_id,seq,due_date,principal_amount,interest_amount,total_amount)
-          VALUES(ctr.branch_id,ctr.id,seq_no,(coalesce(ctr.first_due_date,ctr.start_date)+((seq_no-1)||' months')::interval)::date,row_principal,row_interest,row_total);
-          principal_left := principal_left - row_principal;
-          paid_total := paid_total + row_total;
+          VALUES(ctr.branch_id,ctr.id,v_seq_no,(coalesce(ctr.first_due_date,ctr.start_date)+((v_seq_no-1)||' months')::interval)::date,v_row_principal,v_row_interest,v_row_total);
+          v_principal_left := v_principal_left - v_row_principal;
+          v_paid_total := v_paid_total + v_row_total;
         END LOOP;
       END IF;
     END LOOP;
