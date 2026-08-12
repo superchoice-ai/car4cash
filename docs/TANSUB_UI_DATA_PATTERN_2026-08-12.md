@@ -52,3 +52,15 @@ Do not weaken normal branch RLS to implement this. Use a narrowly scoped server/
 - The individual printer button may bypass Preview and open the isolated print-ready page directly.
 - Clause numbering uses one common hanging-indent alignment; clause 7 must align with clauses 1–6 and 8–9.
 - The footer `เอกสารสร้างจากระบบ ...` remains anchored at the lower-right edge of the A4 contract.
+
+## Configuration freshness and concurrency
+- `system_settings` and `integration_secrets` are DB source-of-truth; do not keep a long-lived server cache for values that control an event or external integration.
+- **Execution-time rule:** whenever an event/action actually uses a config (LINE push, status sync, login callback, future integration event), read the required config from DB at the beginning of that execution. This guarantees that the event uses the latest committed value.
+- Read config once per event and reuse it inside that event; do not query the same setting repeatedly inside loops. Example: status sync reads `line_notify` once per sync, then sends all incident notifications with that snapshot.
+- `integration_secrets` must be read server-side. DB value takes precedence; environment variables are fallback only when the DB value is empty.
+- **UI rule:** configuration screens refetch on mount, when the browser window regains focus, after any save, on explicit manual refresh, and at most every 30 minutes while the page remains open.
+- UI caching is display-only. A cached UI value must never be trusted for an external action; the server action reads DB again before execution.
+- After config mutation, invalidate/refetch all relevant query keys immediately so the current browser reflects the committed DB state instead of waiting for the 30-minute interval.
+- Config writes that modify a nested JSON setting must read the latest DB row on the server and merge only the intended fields, preserving unrelated fields. Avoid writing a stale browser snapshot back over the whole JSON object.
+- Favor one small indexed row read per config key/event over frequent polling. This keeps DB transactions short and minimizes contention under concurrent users while preserving fresh execution behavior.
+- Future screens/events that introduce config must follow this pattern before adding a custom cache or polling interval.
