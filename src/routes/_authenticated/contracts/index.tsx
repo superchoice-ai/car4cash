@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, FilePlus2, Printer } from "lucide-react";
+import { Eye, FilePlus2, Printer, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
+import { useSystemSetting } from "@/hooks/useSystemSetting";
 import { PageHeader, EmptyState, StatusPill } from "@/components/Common";
-import { ContractPromisPrint } from "@/components/ContractPromisPrint";
+import { ContractPromisPrint, FALLBACK_COMPANY, type CompanyConfig } from "@/components/ContractPromisPrint";
 import { StandardPagination, paginateRows } from "@/components/StandardPagination";
 import { SearchableCombobox, StandardSearch, includesThaiSearch } from "@/components/SearchableCombobox";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ function ContractsPage() {
   const { profile, isHQ } = useAuth();
   const { branchId } = useBranchFilter();
   const qc = useQueryClient();
+  const companySetting = useSystemSetting<CompanyConfig>("company", FALLBACK_COMPANY);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -106,8 +108,13 @@ function ContractsPage() {
     if (!win) toast.error("เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต Pop-up");
   };
 
+  const refreshConfig = async () => {
+    await companySetting.refresh();
+    toast.success("โหลดข้อมูลบริษัทล่าสุดจาก DB แล้ว");
+  };
+
   return <div>
-    <PageHeader title="สัญญาสินเชื่อ" description="จัดทำสัญญาจากคำขอที่อนุมัติ พร้อมตารางผ่อนชำระอัตโนมัติ" actions={<Button onClick={() => setOpen(true)}><FilePlus2 className="size-4" /> ทำสัญญาใหม่</Button>} />
+    <PageHeader title="สัญญาสินเชื่อ" description="จัดทำสัญญาจากคำขอที่อนุมัติ พร้อมตารางผ่อนชำระอัตโนมัติ" actions={<><Button variant="outline" onClick={() => void refreshConfig()} disabled={companySetting.isFetching}><RefreshCw className={companySetting.isFetching ? "size-4 animate-spin" : "size-4"} /> โหลดค่าล่าสุด</Button><Button onClick={() => setOpen(true)}><FilePlus2 className="size-4" /> ทำสัญญาใหม่</Button></>} />
 
     <Card className="mb-4"><CardContent className="flex flex-wrap gap-3 p-4">
       <StandardSearch value={search} onChange={setSearch} placeholder="ค้นหาเลขสัญญา / ชื่อไทย / เลขบัตร / โทร / LINEID / ทะเบียน / สาขา" />
@@ -118,8 +125,8 @@ function ContractsPage() {
 
     <Dialog open={!!previewContract} onOpenChange={(v) => !v && setPreviewContract(null)}>
       <DialogContent className="max-h-[96vh] overflow-hidden sm:max-w-[min(96vw,1100px)]">
-        <DialogHeader className="no-print"><DialogTitle>Preview สัญญากู้ยืมเงิน {previewContract?.code}</DialogTitle><DialogDescription>สัญญา A4 ภาษาไทย ดึงข้อมูลรายบุคคลจากฐานข้อมูลโดยตรง และใช้แบบเดียวกันกับหน้าพิมพ์</DialogDescription></DialogHeader>
-        <div className="max-h-[78vh] overflow-auto rounded-md bg-muted p-4">{previewContract && <ContractPromisPrint contract={previewContract} />}</div>
+        <DialogHeader className="no-print"><DialogTitle>Preview สัญญากู้ยืมเงิน {previewContract?.code}</DialogTitle><DialogDescription>สัญญา A4 ภาษาไทย ดึงข้อมูลรายบุคคลและข้อมูลบริษัทล่าสุดจากฐานข้อมูลโดยตรง</DialogDescription></DialogHeader>
+        <div className="max-h-[78vh] overflow-auto rounded-md bg-muted p-4">{previewContract && <ContractPromisPrint contract={previewContract} company={companySetting.value} />}</div>
         <DialogFooter className="no-print"><Button variant="outline" onClick={() => setPreviewContract(null)}>ปิด</Button><Button onClick={() => previewContract && openPrint(previewContract.id)}><Printer className="size-4" /> พิมพ์ / Save PDF</Button></DialogFooter>
       </DialogContent>
     </Dialog>
