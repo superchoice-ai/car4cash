@@ -1,6 +1,13 @@
 import { formatMoney, formatThaiDate } from "@/lib/format";
 import "./ContractPromisPrint.css";
 
+export type CompanyConfig = {
+  name?: string | null;
+  address?: string | null;
+  phone?: string | null;
+  tax_id?: string | null;
+};
+
 type ContractPrintData = {
   code: string;
   principal: number;
@@ -35,8 +42,10 @@ type ContractPrintData = {
   } | null;
 };
 
-const COMPANY_NAME = "บริษัท ธารทรัพย์ แอสเซท จำกัด";
-const COMPANY_ADDRESS = "40/6 ถ.จุลจอมเกล้า ต.ท่าข้าม อ.พุนพิน จ.สุราษฎร์ธานี";
+export const FALLBACK_COMPANY: Required<Pick<CompanyConfig, "name" | "address">> = {
+  name: "บริษัท ธารทรัพย์ แอสเซท จำกัด",
+  address: "40/6 ถ.จุลจอมเกล้า ต.ท่าข้าม อ.พุนพิน จ.สุราษฎร์ธานี",
+};
 
 function ageFromBirthDate(value?: string | null) {
   if (!value) return "—";
@@ -81,16 +90,14 @@ function thaiBahtText(satang: number) {
 }
 
 function Field({ children, min = "4rem" }: { children: React.ReactNode; min?: string }) {
-  return (
-    <span className="contract-field" style={{ minWidth: min }}>
-      {children || "—"}
-    </span>
-  );
+  return <span className="contract-field" style={{ minWidth: min }}>{children || "—"}</span>;
 }
 
-export function ContractPromisPrint({ contract }: { contract: ContractPrintData }) {
+export function ContractPromisPrint({ contract, company }: { contract: ContractPrintData; company?: CompanyConfig | null }) {
   const customer = contract.customers ?? {};
   const vehicle = contract.vehicles ?? {};
+  const companyName = company?.name?.trim() || FALLBACK_COMPANY.name;
+  const companyAddress = company?.address?.trim() || FALLBACK_COMPANY.address;
   const address = [customer.address, customer.district, customer.province, customer.postcode].filter(Boolean).join(" ") || "—";
   const carText = [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || "—";
   const dueDay = contract.first_due_date ? new Date(`${contract.first_due_date}T00:00:00`).getDate() : "—";
@@ -106,14 +113,8 @@ export function ContractPromisPrint({ contract }: { contract: ContractPrintData 
       </header>
 
       <section className="contract-party">
-        <p>
-          สัญญาฉบับนี้ทำขึ้นระหว่าง นาย/นาง/นางสาว <Field min="14rem">{customer.full_name}</Field> อายุ <Field min="2.5rem">{ageFromBirthDate(customer.birth_date)}</Field> ปี
-          เลขบัตรประจำตัวประชาชน <Field min="10rem">{customer.national_id}</Field> โทรศัพท์ <Field min="7rem">{customer.phone}</Field>
-        </p>
-        <p>
-          ที่อยู่ <Field min="25rem">{address}</Field> ซึ่งต่อไปในสัญญานี้เรียกว่า “ผู้กู้” ฝ่ายหนึ่ง กับ {COMPANY_NAME} สำนักงานตั้งอยู่เลขที่ {COMPANY_ADDRESS}
-          ซึ่งต่อไปในสัญญานี้เรียกว่า “ผู้ให้กู้” อีกฝ่ายหนึ่ง คู่สัญญาทั้งสองฝ่ายตกลงกันดังข้อความต่อไปนี้
-        </p>
+        <p>สัญญาฉบับนี้ทำขึ้นระหว่าง นาย/นาง/นางสาว <Field min="14rem">{customer.full_name}</Field> อายุ <Field min="2.5rem">{ageFromBirthDate(customer.birth_date)}</Field> ปี เลขบัตรประจำตัวประชาชน <Field min="10rem">{customer.national_id}</Field> โทรศัพท์ <Field min="7rem">{customer.phone}</Field></p>
+        <p>ที่อยู่ <Field min="25rem">{address}</Field> ซึ่งต่อไปในสัญญานี้เรียกว่า “ผู้กู้” ฝ่ายหนึ่ง กับ {companyName} สำนักงานตั้งอยู่เลขที่ {companyAddress} ซึ่งต่อไปในสัญญานี้เรียกว่า “ผู้ให้กู้” อีกฝ่ายหนึ่ง คู่สัญญาทั้งสองฝ่ายตกลงกันดังข้อความต่อไปนี้</p>
       </section>
 
       <section className="contract-clauses">
@@ -138,7 +139,7 @@ export function ContractPromisPrint({ contract }: { contract: ContractPrintData 
 
       <footer className="contract-signatures">
         <div><div className="signature-line" /><p>ลงชื่อ ........................................................ ผู้กู้</p><p>({customer.full_name ?? "........................................................"})</p></div>
-        <div><div className="signature-line" /><p>ลงชื่อ ........................................................ ผู้ให้กู้</p><p>({COMPANY_NAME})</p></div>
+        <div><div className="signature-line" /><p>ลงชื่อ ........................................................ ผู้ให้กู้</p><p>({companyName})</p></div>
         <div><div className="signature-line" /><p>ลงชื่อ ........................................................ พยาน</p><p>(........................................................)</p></div>
         <div><div className="signature-line" /><p>ลงชื่อ ........................................................ พยาน</p><p>(........................................................)</p></div>
       </footer>
