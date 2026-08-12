@@ -34,7 +34,7 @@ function ContractDetail() {
       const [c, ins, pay] = await Promise.all([
         supabase
           .from("contracts")
-          .select("*, customers:customer_id(id,code,full_name,national_id,phone,address,district,province,postcode,birth_date), vehicles:vehicle_id(plate_no,plate_province,brand,model,vehicle_type,chassis_no), branches:branch_id(name)")
+          .select("*, customers:customer_id(id,code,full_name,national_id,phone,address,district,province,postcode,birth_date), vehicles:vehicle_id(plate_no,plate_province,brand,model,vehicle_type,chassis_no), branches:branch_id(name,address)")
           .eq("id", contractId)
           .maybeSingle(),
         supabase.from("installments").select("*").eq("contract_id", contractId).order("seq"),
