@@ -10,16 +10,25 @@ const SEVERITY_RANK: Record<IncidentSeverity, number> = {
 };
 
 export async function runStatusSync() {
-  const { data: setting } = await supabaseAdmin
+  // Event execution always reads the latest system_settings value from DB.
+  const { data: setting, error: settingError } = await supabaseAdmin
     .from("system_settings")
     .select("value")
     .eq("key", "status_feed")
     .maybeSingle();
-  const cfg = (setting?.value ?? {}) as { url?: string; enabled?: boolean; line_notify_min_severity?: IncidentSeverity };
+  if (settingError) throw settingError;
+
+  const cfg = (setting?.value ?? {}) as {
+    url?: string;
+    enabled?: boolean;
+    line_notify_min_severity?: IncidentSeverity;
+  };
   if (cfg.enabled === false) return { synced: 0, notified: 0, skipped: "disabled" as const };
 
   const url = cfg.url || "https://status.lovable.dev/feed.rss";
-  const res = await fetch(url, { headers: { accept: "application/rss+xml, application/xml, text/xml" } });
+  const res = await fetch(url, {
+    headers: { accept: "application/rss+xml, application/xml, text/xml" },
+  });
   if (!res.ok) throw new Error(`ดึงฟีดสถานะไม่สำเร็จ (${res.status})`);
   const incidents = parseStatusFeed(await res.text());
 
@@ -31,16 +40,10 @@ export async function runStatusSync() {
   const byGuid = new Map((existing ?? []).map((e) => [e.guid, e]));
 
   const minRank = SEVERITY_RANK[cfg.line_notify_min_severity ?? "major"] ?? 3;
-  const { getIntegrationSecret, LINE_SECRET_KEYS } = await import("./line.server");
-  const lineToken = await getIntegrationSecret(LINE_SECRET_KEYS.channelAccessToken);
+  const { getLineRecipients, pushLineMessage } = await import("./line.server");
 
-  const { data: lineSetting } = await supabaseAdmin
-    .from("system_settings")
-    .select("value")
-    .eq("key", "line_notify")
-    .maybeSingle();
-  const lineCfg = (lineSetting?.value ?? {}) as { to?: string[]; enabled?: boolean };
-
+  // Read the current recipient config once per sync event, not once per incident.
+  const lineCfg = await getLineRecipients();
   let notified = 0;
 
   for (const inc of incidents) {
@@ -52,9 +55,8 @@ export async function runStatusSync() {
     const shouldNotify =
       stateChanged &&
       (SEVERITY_RANK[inc.severity] >= minRank || inc.state === "resolved") &&
-      !!lineCfg.enabled &&
-      !!lineToken &&
-      (lineCfg.to?.length ?? 0) > 0;
+      lineCfg.enabled &&
+      lineCfg.to.length > 0;
 
     const record = {
       guid: inc.guid,
@@ -84,23 +86,15 @@ export async function runStatusSync() {
         resolved_at: resolvedAt,
         link: inc.link,
       });
-      for (const to of lineCfg.to ?? []) {
-        try {
-          const push = await fetch("https://api.line.me/v2/bot/message/push", {
-            method: "POST",
-            headers: { "content-type": "application/json", authorization: `Bearer ${lineToken}` },
-            body: JSON.stringify({ to, messages: [{ type: "text", text }] }),
-          });
-          if (push.ok) {
-            record.notified_line = true;
-            notified++;
-          } else {
-            console.error("LINE push failed", push.status, await push.text());
-          }
-        } catch (e) {
-          console.error("LINE push error", e);
-        }
+
+      // Same sender/parameters as Settings > LINE test.
+      // pushLineMessage reads the latest access token from integration_secrets.
+      const result = await pushLineMessage(lineCfg.to, text);
+      if (result.sent > 0) {
+        record.notified_line = true;
+        notified += result.sent;
       }
+      if (!result.ok) console.error("LINE push failed", result.errors);
     }
 
     await supabaseAdmin.from("status_incidents").upsert(record, { onConflict: "guid" });
