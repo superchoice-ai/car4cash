@@ -19,7 +19,7 @@ import { APPROVAL_STATUS_LABEL, APPROVAL_TYPE_LABEL } from "@/lib/labels";
 export const Route = createFileRoute("/_authenticated/approvals/")({ component: ApprovalsPage });
 
 function ApprovalsPage() {
-  const { profile, canApprove } = useAuth();
+  const { canApprove } = useAuth();
   const { branchId } = useBranchFilter();
   const qc = useQueryClient();
   const [note, setNote] = useState("");
@@ -37,6 +37,18 @@ function ApprovalsPage() {
     },
   });
 
+  const { data: profiles } = useQuery({
+    queryKey: ["approval-profiles", branchId],
+    queryFn: async () => {
+      let q = supabase.from("profiles").select("id, full_name, branch_id");
+      if (branchId) q = q.eq("branch_id", branchId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const profileNames = new Map((profiles ?? []).map((p) => [p.id, p.full_name]));
+
   const decide = useMutation({
     mutationFn: async ({ id, approve }: { id: string; approve: boolean }) => {
       const rpc = supabase.rpc as unknown as (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
@@ -53,13 +65,13 @@ function ApprovalsPage() {
 
   const filtered = (data ?? []).filter((a) =>
     (status === "all" || a.status === status) &&
-    includesThaiSearch(search, [a.entity_label, a.reason, a.type, APPROVAL_TYPE_LABEL[a.type], a.branches?.name, a.status, APPROVAL_STATUS_LABEL[a.status]])
+    includesThaiSearch(search, [a.entity_label, a.reason, a.type, APPROVAL_TYPE_LABEL[a.type], a.branches?.name, a.status, APPROVAL_STATUS_LABEL[a.status], profileNames.get(a.decided_by ?? "")])
   );
 
   return <div>
     <PageHeader title="คำขออนุมัติ" description="ศูนย์กลางคำขอแก้ไข ยกเลิก และรายการที่ต้องผ่านผู้มีอำนาจ" />
     <Card className="mb-4"><CardContent className="flex flex-wrap gap-3 p-4">
-      <StandardSearch value={search} onChange={setSearch} placeholder="ค้นหาประเภท / รายการ / เหตุผล / สาขา / สถานะ" />
+      <StandardSearch value={search} onChange={setSearch} placeholder="ค้นหาประเภท / รายการ / เหตุผล / สาขา / ผู้อนุมัติ / สถานะ" />
       <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-44"><SelectValue /></SelectTrigger><SelectContent>
         <SelectItem value="all">ทุกสถานะ</SelectItem>{Object.entries(APPROVAL_STATUS_LABEL).map(([k,v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
       </SelectContent></Select>
@@ -70,7 +82,7 @@ function ApprovalsPage() {
     <Card><CardContent className="p-0">
       {isLoading ? <div className="p-6">กำลังโหลด...</div> : filtered.length === 0 ? <div className="p-6"><EmptyState title="ไม่มีคำขออนุมัติที่ตรงเงื่อนไข" /></div> :
       <div className="overflow-x-auto"><Table><TableHeader><TableRow>
-        <TableHead>ประเภท</TableHead><TableHead>รายการ</TableHead><TableHead>เหตุผล</TableHead><TableHead>สาขา</TableHead><TableHead>เวลา</TableHead><TableHead>สถานะ</TableHead><TableHead className="text-right">จัดการ</TableHead>
+        <TableHead>ประเภท</TableHead><TableHead>รายการ</TableHead><TableHead>เหตุผล</TableHead><TableHead>สาขา</TableHead><TableHead>เวลาขอ</TableHead><TableHead>สถานะ</TableHead><TableHead>ผู้อนุมัติ</TableHead><TableHead>เวลาพิจารณา</TableHead><TableHead className="text-right">จัดการ</TableHead>
       </TableRow></TableHeader><TableBody>{filtered.map((a) => <TableRow key={a.id}>
         <TableCell>{APPROVAL_TYPE_LABEL[a.type] ?? a.type}</TableCell>
         <TableCell className="tabular font-medium">{a.entity_label ?? "-"}</TableCell>
@@ -78,12 +90,13 @@ function ApprovalsPage() {
         <TableCell>{a.branches?.name ?? "-"}</TableCell>
         <TableCell className="tabular text-muted-foreground">{formatThaiDateTime(a.created_at)}</TableCell>
         <TableCell><StatusPill status={a.status} label={APPROVAL_STATUS_LABEL[a.status] ?? a.status} /></TableCell>
+        <TableCell>{a.decided_by ? (profileNames.get(a.decided_by) ?? a.decided_by) : "-"}</TableCell>
+        <TableCell className="tabular text-muted-foreground">{a.decided_at ? formatThaiDateTime(a.decided_at) : "-"}</TableCell>
         <TableCell className="text-right">{a.status === "pending" && canApprove && <div className="flex justify-end gap-1">
           <Button size="sm" onClick={() => decide.mutate({ id: a.id, approve: true })} disabled={decide.isPending}><Check className="size-3.5" /> อนุมัติ</Button>
           <Button size="sm" variant="outline" onClick={() => decide.mutate({ id: a.id, approve: false })} disabled={decide.isPending}><X className="size-3.5" /> ไม่อนุมัติ</Button>
         </div>}</TableCell>
       </TableRow>)}</TableBody></Table></div>}
     </CardContent></Card>
-    <p className="mt-3 text-xs text-muted-foreground">ผู้พิจารณา: {profile?.full_name || "-"} · ระบบบันทึก approver และ timestamp อัตโนมัติ</p>
   </div>;
 }
