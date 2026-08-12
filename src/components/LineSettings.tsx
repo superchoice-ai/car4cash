@@ -7,10 +7,12 @@ import { saveLineRecipients, sendLineTest } from "@/lib/line.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, RefreshCw, Send } from "lucide-react";
 
 const CONFIG_REFRESH_MS = 30 * 60 * 1000;
+const RECIPIENT_SECRET_KEY = "LINE_NOTIFY_RECIPIENTS";
 
 const KEYS = [
   { key: "LINE_LOGIN_CHANNEL_ID", label: "LINE Login – Channel ID", category: "line_login" },
@@ -31,8 +33,9 @@ interface SecretRow {
 export function LineSettings() {
   const qc = useQueryClient();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [recipients, setRecipients] = useState("");
+  const [recipientDraft, setRecipientDraft] = useState("");
   const [testTo, setTestTo] = useState("");
+  const [testMessage, setTestMessage] = useState("ทดสอบการแจ้งเตือนจากระบบธารทรัพย์ ✅");
   const testFn = useServerFn(sendLineTest);
   const saveRecipientsFn = useServerFn(saveLineRecipients);
 
@@ -59,8 +62,7 @@ export function LineSettings() {
         .eq("key", "line_notify")
         .maybeSingle();
       if (error) throw error;
-      const cfg = (data?.value ?? {}) as { to?: string[]; enabled?: boolean };
-      setRecipients((cfg.to ?? []).join(", "));
+      const cfg = (data?.value ?? {}) as { enabled?: boolean; recipients_source?: string };
       return { ...cfg, updated_at: data?.updated_at ?? null };
     },
     staleTime: CONFIG_REFRESH_MS,
@@ -89,26 +91,24 @@ export function LineSettings() {
   });
 
   const saveRecipientsMutation = useMutation({
-    mutationFn: async () => saveRecipientsFn({ data: { to: recipients, enabled: true } }),
+    mutationFn: async () => saveRecipientsFn({ data: { to: recipientDraft, enabled: true } }),
     onSuccess: async (result) => {
-      setRecipients(result.to.join(", "));
+      setRecipientDraft("");
       await Promise.all([
+        qc.invalidateQueries({ queryKey: ["integration-secrets"] }),
         qc.invalidateQueries({ queryKey: ["line-notify-setting"] }),
         qc.invalidateQueries({ queryKey: ["settings-data"] }),
       ]);
-      toast.success(`บันทึกผู้รับ ${result.to.length} ราย และโหลดค่าล่าสุดจาก DB แล้ว`);
+      toast.success(`บันทึกผู้รับ ${result.count} รายแบบปกปิดแล้ว`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const sendTest = useMutation({
-    mutationFn: async () => testFn({ data: { to: testTo } }),
+    mutationFn: async () => testFn({ data: { to: testTo, text: testMessage } }),
     onSuccess: (r) => {
-      if (r.ok) {
-        toast.success(`ส่งสำเร็จ ${r.sent} ข้อความ · ผู้รับ ${r.targetCount} ราย`);
-      } else {
-        toast.error(r.errors[0] ?? "ส่งไม่สำเร็จ");
-      }
+      if (r.ok) toast.success(`ส่งสำเร็จ ${r.sent} ข้อความ · ผู้รับ ${r.targetCount} ราย`);
+      else toast.error(r.errors[0] ?? "ส่งไม่สำเร็จ");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -119,6 +119,7 @@ export function LineSettings() {
   };
 
   const maskedOf = (key: string) => secrets?.find((s) => s.key === key)?.masked ?? "";
+  const recipientMasked = maskedOf(RECIPIENT_SECRET_KEY);
   const isRefreshing = secretsQuery.isFetching || notifyQuery.isFetching;
 
   return (
@@ -137,7 +138,7 @@ export function LineSettings() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5">
         <div className="grid gap-3 md:grid-cols-2">
           {KEYS.map((item) => (
             <div key={item.key} className="space-y-1.5">
@@ -151,11 +152,7 @@ export function LineSettings() {
                   placeholder={maskedOf(item.key) || "ยังไม่ได้ตั้งค่า"}
                   onChange={(e) => setDrafts((p) => ({ ...p, [item.key]: e.target.value }))}
                 />
-                <Button
-                  variant="secondary"
-                  disabled={!drafts[item.key]?.trim() || saveSecret.isPending}
-                  onClick={() => saveSecret.mutate(item)}
-                >
+                <Button variant="secondary" disabled={!drafts[item.key]?.trim() || saveSecret.isPending} onClick={() => saveSecret.mutate(item)}>
                   บันทึก
                 </Button>
               </div>
@@ -165,30 +162,56 @@ export function LineSettings() {
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="line-to">ผู้รับการแจ้งเตือน (LINE user ID / group ID คั่นด้วย comma, space หรือขึ้นบรรทัดใหม่)</Label>
+          <Label htmlFor="line-to">ผู้รับการแจ้งเตือน (ข้อมูลลับ)</Label>
           <div className="flex gap-2">
-            <Input id="line-to" value={recipients} onChange={(e) => setRecipients(e.target.value)} placeholder="Uxxxxxxxx, Cxxxxxxxx" />
-            <Button variant="secondary" disabled={saveRecipientsMutation.isPending} onClick={() => saveRecipientsMutation.mutate()}>
+            <Input
+              id="line-to"
+              type="password"
+              autoComplete="off"
+              value={recipientDraft}
+              onChange={(e) => setRecipientDraft(e.target.value)}
+              placeholder={recipientMasked || "Uxxxxxxxx, Cxxxxxxxx"}
+            />
+            <Button variant="secondary" disabled={!recipientDraft.trim() || saveRecipientsMutation.isPending} onClick={() => saveRecipientsMutation.mutate()}>
               บันทึก
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            คั่นหลายรายด้วย comma, space หรือขึ้นบรรทัดใหม่ · หลังบันทึกจะแสดงเฉพาะ masked value และไม่โหลด LINE ID จริงกลับเข้า browser
+          </p>
+          {recipientMasked && <p className="tabular text-xs text-muted-foreground">ค่าปัจจุบัน: {recipientMasked}</p>}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="line-test">ทดสอบส่งข้อความจริง</Label>
-          <div className="flex gap-2">
+        <div className="rounded-lg border p-3 space-y-3">
+          <div className="font-medium">ทดสอบส่งข้อความจริง</div>
+          <div className="space-y-1.5">
+            <Label htmlFor="line-test-to">ผู้รับทดสอบ (ไม่บังคับ)</Label>
             <Input
-              id="line-test"
+              id="line-test-to"
+              type="password"
+              autoComplete="off"
               value={testTo}
               onChange={(e) => setTestTo(e.target.value)}
-              placeholder="เว้นว่าง = ใช้ผู้รับล่าสุดใน system_settings · กรอกหลาย ID ได้"
+              placeholder="เว้นว่าง = ใช้ผู้รับล่าสุดที่บันทึกไว้ · กรอกหลาย ID ได้"
             />
-            <Button disabled={sendTest.isPending} onClick={() => sendTest.mutate()}>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="line-test-message">ข้อความทดสอบ</Label>
+            <Textarea
+              id="line-test-message"
+              value={testMessage}
+              onChange={(e) => setTestMessage(e.target.value)}
+              rows={5}
+              placeholder="พิมพ์ข้อความที่ต้องการส่งทดสอบ"
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button disabled={sendTest.isPending || !testMessage.trim()} onClick={() => sendTest.mutate()}>
               {sendTest.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />} ส่งทดสอบ
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            การส่งจริงจะอ่าน LINE_CHANNEL_ACCESS_TOKEN และรายชื่อผู้รับจาก DB ณ เวลาที่กดส่ง ไม่ใช้ค่าที่ cache บนหน้าจอ
+            การส่งจริงอ่าน LINE_CHANNEL_ACCESS_TOKEN และผู้รับล่าสุดจาก confidential DB ณ เวลาที่กดส่ง ไม่ใช้ค่าที่ cache บนหน้าจอ
           </p>
         </div>
       </CardContent>
