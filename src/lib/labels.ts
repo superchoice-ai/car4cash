@@ -13,7 +13,7 @@ export const ROLE_LABEL: Record<AppRole, string> = {
 export const CUSTOMER_STATUS_LABEL: Record<string, string> = {
   active: "ปกติ",
   inactive: "ไม่ใช้งาน",
-  blacklist: "บัญชีดำ",
+  blacklist: "ลูกค้าไม่พึงประสงค์",
 };
 
 export const APPLICATION_STATUS_LABEL: Record<string, string> = {
