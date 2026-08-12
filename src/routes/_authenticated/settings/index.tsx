@@ -7,6 +7,8 @@ import { LineSettings } from "@/components/LineSettings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+const CONFIG_REFRESH_MS = 30 * 60 * 1000;
+
 export const Route = createFileRoute("/_authenticated/settings/")({
   head: () => ({
     meta: [
@@ -25,10 +27,16 @@ function SettingsPage() {
     queryFn: async () => {
       const [b, s] = await Promise.all([
         supabase.from("branches").select("*").order("code"),
-        supabase.from("system_settings").select("*"),
+        supabase.from("system_settings").select("*").order("key"),
       ]);
+      if (b.error) throw b.error;
+      if (s.error) throw s.error;
       return { branches: b.data ?? [], settings: s.data ?? [] };
     },
+    staleTime: CONFIG_REFRESH_MS,
+    refetchInterval: CONFIG_REFRESH_MS,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
   });
 
   return (
@@ -36,8 +44,6 @@ function SettingsPage() {
       <PageHeader title="ตั้งค่าระบบ" description="ข้อมูลสาขา ค่าตั้งต้น และการเชื่อมต่อ LINE" />
 
       <LineSettings />
-
-
 
       <Card className="mb-4">
         <CardHeader className="pb-2">
