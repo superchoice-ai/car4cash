@@ -1,0 +1,122 @@
+.contract-print-sheet {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 9mm 12mm 8mm;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: "Noto Sans Thai", "IBM Plex Sans Thai", Tahoma, sans-serif;
+  font-size: 9.75pt;
+  line-height: 1.4;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+}
+
+.contract-heading {
+  position: relative;
+  margin-bottom: 2.4mm;
+  text-align: center;
+}
+.contract-heading h1 { margin: 0 0 0.7mm; font-size: 17pt; font-weight: 700; line-height: 1.2; }
+.contract-heading p { margin: 0.25mm 0; }
+.contract-no { position: absolute; top: 0; right: 0; font-size: 9pt; }
+
+.contract-party p,
+.contract-clauses p { margin: 0 0 1.15mm; text-align: justify; }
+.contract-party p:first-child { text-indent: 0; }
+.contract-party p:not(:first-child) { text-indent: 8mm; }
+
+.contract-clauses p:has(> b:first-child) {
+  padding-left: 11mm;
+  text-indent: -11mm;
+}
+.contract-clauses p > b:first-child {
+  display: inline-block;
+  width: 11mm;
+  text-align: left;
+  text-indent: 0;
+  font-weight: 700;
+}
+
+.contract-field {
+  display: inline-block;
+  min-height: 1em;
+  border-bottom: 0.3mm dotted #555;
+  padding: 0 1mm;
+  text-align: center;
+  text-indent: 0;
+  font-weight: 600;
+  vertical-align: baseline;
+}
+
+.contract-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5mm;
+  margin-top: 2.2mm;
+  border: 0.3mm solid #999;
+  padding: 1.6mm 2mm;
+  font-size: 8.8pt;
+}
+.contract-summary div { display: flex; flex-direction: column; gap: 0.25mm; }
+.contract-summary span { color: #444; font-size: 7.8pt; }
+
+.contract-signatures {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 12mm;
+  row-gap: 3.2mm;
+  margin-top: 4.5mm;
+  text-align: center;
+  font-size: 9pt;
+}
+.contract-signatures p { margin: 0.35mm 0 0; }
+.signature-line { height: 4mm; }
+
+.contract-footer-note {
+  position: absolute;
+  right: 12mm;
+  bottom: 5.5mm;
+  margin: 0;
+  color: #666;
+  font-size: 7pt;
+  text-align: right;
+}
+
+.contract-print-route {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 0;
+  background: #fff;
+}
+
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  html.contract-print-document,
+  body.contract-print-document {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+  .contract-print-route {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .contract-print-sheet {
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
