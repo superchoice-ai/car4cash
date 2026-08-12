@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Receipt, Calculator } from "lucide-react";
+import { Calculator, ChevronDown, ChevronRight, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +24,17 @@ import type { CashCategory } from "@/lib/cashbook";
 export const Route = createFileRoute("/_authenticated/payments/")({ component: PaymentsPage });
 const FEE_FIELDS: { key: CashCategory; label: string }[] = [{ key: "insurance", label: "ค่าประกัน" }, { key: "registration", label: "ค่าทะเบียน" }, { key: "follow_up", label: "ค่าติดตาม" }];
 
+type PaymentRow = any;
+type PaymentGroup = {
+  contractId: string;
+  contractCode: string;
+  customerName: string;
+  branchName: string;
+  payments: PaymentRow[];
+  latestPaidAt: string | null;
+  totalAmount: number;
+};
+
 function PaymentsPage() {
   const { profile, isHQ } = useAuth();
   const { branchId } = useBranchFilter();
@@ -32,6 +43,7 @@ function PaymentsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [expandedContracts, setExpandedContracts] = useState<Set<string>>(() => new Set());
   const [contractId, setContractId] = useState("");
   const [amount, setAmount] = useState("");
   const [paidAt, setPaidAt] = useState(todayISO());
@@ -83,14 +95,64 @@ function PaymentsPage() {
 
   const selected: any = (activeContracts ?? []).find((c: any) => c.id === contractId);
   const contractOptions = (activeContracts ?? []).map((c: any) => ({ value: c.id, label: `${c.code} — ${c.customers?.full_name} — คงค้าง ฿${formatMoney(c.outstanding)}`, keywords: [c.code, c.customers?.full_name, c.customers?.national_id, c.customers?.phone, c.customers?.line_id, c.vehicles?.plate_no] }));
-  const filtered = (payments ?? []).filter((p: any) => includesThaiSearch(search, [p.receipt_no, p.contracts?.code, p.contracts?.customers?.full_name, p.contracts?.customers?.national_id, p.contracts?.customers?.phone, p.contracts?.customers?.line_id, p.reference, p.branches?.name, PAYMENT_METHOD_LABEL[p.method]]));
-  useEffect(() => setPage(1), [search, branchId, pageSize]);
-  const pagination = paginateRows(filtered, page, pageSize);
+  const filtered = (payments ?? []).filter((p: PaymentRow) => includesThaiSearch(search, [p.receipt_no, p.contracts?.code, p.contracts?.customers?.full_name, p.contracts?.customers?.national_id, p.contracts?.customers?.phone, p.contracts?.customers?.line_id, p.reference, p.branches?.name, PAYMENT_METHOD_LABEL[p.method]]));
+
+  const groupedPayments = useMemo<PaymentGroup[]>(() => {
+    const groups = new Map<string, PaymentGroup>();
+    for (const payment of filtered) {
+      const key = payment.contract_id ?? `payment:${payment.id}`;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.payments.push(payment);
+        existing.totalAmount += Number(payment.amount ?? 0);
+        if (!existing.latestPaidAt || (payment.paid_at && payment.paid_at > existing.latestPaidAt)) existing.latestPaidAt = payment.paid_at;
+        continue;
+      }
+      groups.set(key, {
+        contractId: key,
+        contractCode: payment.contracts?.code ?? "-",
+        customerName: payment.contracts?.customers?.full_name ?? "-",
+        branchName: payment.branches?.name ?? "-",
+        payments: [payment],
+        latestPaidAt: payment.paid_at ?? null,
+        totalAmount: Number(payment.amount ?? 0),
+      });
+    }
+    return Array.from(groups.values()).sort((a, b) => (b.latestPaidAt ?? "").localeCompare(a.latestPaidAt ?? ""));
+  }, [filtered]);
+
+  useEffect(() => {
+    setPage(1);
+    setExpandedContracts(new Set());
+  }, [search, branchId, pageSize]);
+
+  const pagination = paginateRows(groupedPayments, page, pageSize);
+  const toggleContract = (id: string) => {
+    setExpandedContracts((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   return <div>
     <PageHeader title="รับชำระเงิน" description="บันทึกค่างวด ตัดยอด และลงสมุดรายรับอัตโนมัติ" actions={<Button onClick={() => setOpen(true)}><Receipt className="size-4" /> รับชำระใหม่</Button>} />
     <Card className="mb-4"><CardContent className="p-4"><StandardSearch value={search} onChange={setSearch} placeholder="ค้นหาใบเสร็จ / สัญญา / ชื่อไทย / เลขบัตร / โทร / LINEID / อ้างอิง / สาขา" /></CardContent></Card>
-    <Card><CardContent className="p-0">{isLoading ? <div className="p-6">กำลังโหลด...</div> : filtered.length === 0 ? <div className="p-6"><EmptyState title="ไม่พบรายการรับชำระ" /></div> : <><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>เลขที่ใบเสร็จ</TableHead><TableHead>สัญญา</TableHead><TableHead>ลูกค้า</TableHead><TableHead>วันที่ชำระ</TableHead><TableHead>ช่องทาง</TableHead>{isHQ && <TableHead>สาขา</TableHead>}<TableHead className="text-right">เงินต้น</TableHead><TableHead className="text-right">ดอกเบี้ย</TableHead><TableHead className="text-right">จำนวนเงิน</TableHead></TableRow></TableHeader><TableBody>{pagination.rows.map((p: any) => <TableRow key={p.id} className={p.voided ? "opacity-50 line-through" : ""}><TableCell className="font-medium">{p.receipt_no}</TableCell><TableCell>{p.contracts?.code ?? "-"}</TableCell><TableCell>{p.contracts?.customers?.full_name ?? "-"}</TableCell><TableCell>{formatThaiDate(p.paid_at)}</TableCell><TableCell>{PAYMENT_METHOD_LABEL[p.method] ?? p.method}</TableCell>{isHQ && <TableCell>{p.branches?.name ?? "-"}</TableCell>}<TableCell className="text-right">{formatMoney(p.principal_part)}</TableCell><TableCell className="text-right">{formatMoney(p.interest_part)}</TableCell><TableCell className="text-right font-medium">฿{formatMoney(p.amount)}</TableCell></TableRow>)}</TableBody></Table></div><StandardPagination page={pagination.page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize}/></>}</CardContent></Card>
+    <Card><CardContent className="p-0">{isLoading ? <div className="p-6">กำลังโหลด...</div> : groupedPayments.length === 0 ? <div className="p-6"><EmptyState title="ไม่พบรายการรับชำระ" /></div> : <><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead className="w-12"/><TableHead>สัญญา</TableHead><TableHead>ลูกค้า</TableHead><TableHead className="text-right">จำนวนรายการ</TableHead><TableHead>รับชำระล่าสุด</TableHead>{isHQ && <TableHead>สาขา</TableHead>}<TableHead className="text-right">ยอดรับรวม</TableHead></TableRow></TableHeader><TableBody>{pagination.rows.map((group) => {
+      const expanded = expandedContracts.has(group.contractId);
+      return <Fragment key={group.contractId}>
+        <TableRow className="cursor-pointer bg-muted/30 hover:bg-muted/60" onClick={() => toggleContract(group.contractId)} aria-expanded={expanded}>
+          <TableCell><Button type="button" variant="ghost" size="icon" className="size-8" aria-label={expanded ? "ยุบรายการรับชำระ" : "ขยายรายการรับชำระ"} onClick={(e) => { e.stopPropagation(); toggleContract(group.contractId); }}>{expanded ? <ChevronDown className="size-4"/> : <ChevronRight className="size-4"/>}</Button></TableCell>
+          <TableCell className="font-semibold">{group.contractCode}</TableCell>
+          <TableCell>{group.customerName}</TableCell>
+          <TableCell className="text-right tabular">{group.payments.length}</TableCell>
+          <TableCell>{group.latestPaidAt ? formatThaiDate(group.latestPaidAt) : "-"}</TableCell>
+          {isHQ && <TableCell>{group.branchName}</TableCell>}
+          <TableCell className="text-right font-semibold">฿{formatMoney(group.totalAmount)}</TableCell>
+        </TableRow>
+        {expanded && <TableRow className="bg-muted/10 hover:bg-muted/10"><TableCell colSpan={isHQ ? 7 : 6} className="p-0"><div className="overflow-x-auto border-y bg-background"><Table><TableHeader><TableRow><TableHead className="pl-12">เลขที่ใบเสร็จ</TableHead><TableHead>วันที่ชำระ</TableHead><TableHead>ช่องทาง</TableHead><TableHead>อ้างอิง</TableHead><TableHead className="text-right">เงินต้น</TableHead><TableHead className="text-right">ดอกเบี้ย</TableHead><TableHead className="text-right">จำนวนเงิน</TableHead></TableRow></TableHeader><TableBody>{group.payments.map((p: PaymentRow) => <TableRow key={p.id} className={p.voided ? "opacity-50 line-through" : ""}><TableCell className="pl-12 font-medium">{p.receipt_no}</TableCell><TableCell>{formatThaiDate(p.paid_at)}</TableCell><TableCell>{PAYMENT_METHOD_LABEL[p.method] ?? p.method}</TableCell><TableCell>{p.reference ?? "-"}</TableCell><TableCell className="text-right">{formatMoney(p.principal_part)}</TableCell><TableCell className="text-right">{formatMoney(p.interest_part)}</TableCell><TableCell className="text-right font-medium">฿{formatMoney(p.amount)}</TableCell></TableRow>)}</TableBody></Table></div></TableCell></TableRow>}
+      </Fragment>;
+    })}</TableBody></Table></div><StandardPagination page={pagination.page} pageSize={pageSize} total={groupedPayments.length} onPageChange={setPage} onPageSizeChange={setPageSize}/></>}</CardContent></Card>
 
     <Dialog open={open} onOpenChange={setOpen}><DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>บันทึกการรับชำระ</DialogTitle><DialogDescription>พิมพ์ชื่อไทยหรือข้อมูลบางส่วนเพื่อค้นหาสัญญา</DialogDescription></DialogHeader><div className="grid max-h-[70vh] gap-3 overflow-y-auto pr-1"><div><Label>สัญญา *</Label><SearchableCombobox value={contractId} onValueChange={setContractId} options={contractOptions} placeholder="ค้นหา/เลือกสัญญา" searchPlaceholder="เลขสัญญา / ชื่อ / เลขบัตร / โทร / LINEID / ทะเบียน" />{selected && <p className="mt-1 text-xs text-muted-foreground">ค่างวด ฿{formatMoney(selected.installment_amount)} · คงค้าง ฿{formatMoney(selected.outstanding)}</p>}</div><div className="grid gap-3 sm:grid-cols-2"><div><Label>จำนวนเงิน *</Label><Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} /></div><div><Label>วันที่ชำระ</Label><Input type="date" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} /></div></div><div className="rounded-md border p-3"><div className="mb-2 flex items-center justify-between"><p className="text-sm font-medium">แยกช่องรายรับ</p><Button type="button" variant="outline" size="sm" onClick={autoAllocate}><Calculator className="size-4" /> คำนวณ</Button></div><div className="grid gap-3 sm:grid-cols-3"><div><Label className="text-xs">เงินต้น</Label><Input type="number" value={principalPart} onChange={(e) => setPrincipalPart(e.target.value)} /></div><div><Label className="text-xs">ดอกเบี้ย</Label><Input type="number" value={interestPart} onChange={(e) => setInterestPart(e.target.value)} /></div><div><Label className="text-xs">ค่าปรับ</Label><Input type="number" value={penaltyPart} onChange={(e) => setPenaltyPart(e.target.value)} /></div>{FEE_FIELDS.map((f) => <div key={f.key}><Label className="text-xs">{f.label}</Label><Input type="number" value={fees[f.key] ?? ""} onChange={(e) => setFees((s) => ({...s,[f.key]:e.target.value}))} /></div>)}<div><Label className="text-xs">เงินทอน</Label><Input type="number" value={changeAmount} onChange={(e) => setChangeAmount(e.target.value)} /></div></div><p className="mt-3 text-right text-sm font-bold">รวมรับ ฿{formatMoney(receiptTotal)}</p></div><div className="grid gap-3 sm:grid-cols-2"><div><Label>ช่องทาง</Label><Select value={method} onValueChange={setMethod}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(PAYMENT_METHOD_LABEL).map(([k,v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent></Select></div><div><Label>เลขที่อ้างอิง</Label><Input value={reference} onChange={(e) => setReference(e.target.value)} /></div></div><div><Label>หมายเหตุ</Label><Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} /></div></div><DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>ยกเลิก</Button><Button onClick={() => receive.mutate()} disabled={receive.isPending}>บันทึกและออกใบเสร็จ</Button></DialogFooter></DialogContent></Dialog>
   </div>;
