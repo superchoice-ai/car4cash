@@ -6,6 +6,7 @@ export const LINE_SECRET_KEYS = {
   loginChannelId: "LINE_LOGIN_CHANNEL_ID",
   loginChannelSecret: "LINE_LOGIN_CHANNEL_SECRET",
   loginRedirectUri: "LINE_LOGIN_REDIRECT_URI",
+  notifyRecipients: "LINE_NOTIFY_RECIPIENTS",
 } as const;
 
 /**
@@ -27,10 +28,6 @@ export async function getIntegrationSecret(key: string): Promise<string | null> 
   return env && env.trim() ? env.trim() : null;
 }
 
-/**
- * Callback URL ที่ต้องตรงกับที่ลงทะเบียนใน LINE Developers Console แบบเป๊ะ ๆ
- * ถ้าตั้งค่า LINE_LOGIN_REDIRECT_URI ไว้ จะใช้ค่านั้นเสมอ (ไม่ต้องลงทะเบียนทุกโดเมน)
- */
 export async function getLineRedirectUri(origin: string): Promise<string> {
   const fixed = await getIntegrationSecret(LINE_SECRET_KEYS.loginRedirectUri);
   return (fixed || `${origin}/api/public/auth/line/callback`).trim();
@@ -48,7 +45,6 @@ export type LineNotifyConfig = {
   to: string[];
 };
 
-/** รองรับค่าเดียว / หลายค่า / comma / whitespace / newline และตัดค่าซ้ำ */
 export function normalizeLineTargets(input?: string | string[] | null): string[] {
   const values = Array.isArray(input) ? input : [input ?? ""];
   return Array.from(
@@ -61,19 +57,30 @@ export function normalizeLineTargets(input?: string | string[] | null): string[]
   );
 }
 
-/** อ่านผู้รับ LINE ล่าสุดจาก system_settings ทุกครั้งที่ event ต้องใช้ */
+/**
+ * อ่านผู้รับ LINE ล่าสุดจาก integration_secrets ก่อนเสมอ
+ * system_settings.line_notify.to เป็น fallback สำหรับข้อมูล legacy เท่านั้น
+ */
 export async function getLineRecipients(): Promise<LineNotifyConfig> {
-  const { data, error } = await supabaseAdmin
-    .from("system_settings")
-    .select("value")
-    .eq("key", "line_notify")
-    .maybeSingle();
-  if (error) throw error;
+  const [secretRecipients, settingResult] = await Promise.all([
+    getIntegrationSecret(LINE_SECRET_KEYS.notifyRecipients),
+    supabaseAdmin
+      .from("system_settings")
+      .select("value")
+      .eq("key", "line_notify")
+      .maybeSingle(),
+  ]);
 
-  const cfg = (data?.value ?? {}) as { to?: string[] | string; enabled?: boolean };
+  if (settingResult.error) throw settingResult.error;
+  const cfg = (settingResult.data?.value ?? {}) as {
+    to?: string[] | string;
+    enabled?: boolean;
+  };
+  const confidentialTargets = normalizeLineTargets(secretRecipients);
+
   return {
     enabled: cfg.enabled !== false,
-    to: normalizeLineTargets(cfg.to),
+    to: confidentialTargets.length ? confidentialTargets : normalizeLineTargets(cfg.to),
   };
 }
 
@@ -83,21 +90,10 @@ export async function pushLineMessage(to: string[] | string, text: string): Prom
   const token = await getIntegrationSecret(LINE_SECRET_KEYS.channelAccessToken);
 
   if (!token) {
-    return {
-      ok: false,
-      sent: 0,
-      failed: targets.length,
-      errors: ["ยังไม่ได้ตั้งค่า LINE_CHANNEL_ACCESS_TOKEN"],
-    };
+    return { ok: false, sent: 0, failed: targets.length, errors: ["ยังไม่ได้ตั้งค่า LINE_CHANNEL_ACCESS_TOKEN"] };
   }
-
   if (!targets.length) {
-    return {
-      ok: false,
-      sent: 0,
-      failed: 0,
-      errors: ["ยังไม่ได้ระบุผู้รับ (LINE user ID / group ID)"],
-    };
+    return { ok: false, sent: 0, failed: 0, errors: ["ยังไม่ได้ระบุผู้รับ (LINE user ID / group ID)"] };
   }
 
   const message = text.trim().slice(0, 4900);
@@ -117,15 +113,11 @@ export async function pushLineMessage(to: string[] | string, text: string): Prom
           "content-type": "application/json",
           authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          to: target,
-          messages: [{ type: "text", text: message }],
-        }),
+        body: JSON.stringify({ to: target, messages: [{ type: "text", text: message }] }),
       });
 
-      if (res.ok) {
-        sent++;
-      } else {
+      if (res.ok) sent++;
+      else {
         failed++;
         errors.push(`${target}: ${res.status} ${(await res.text()).slice(0, 300)}`);
       }
