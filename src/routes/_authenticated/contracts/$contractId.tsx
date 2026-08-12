@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Eye, Printer } from "lucide-react";
+import { ArrowLeft, Eye, Printer, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ContractPromisPrint } from "@/components/ContractPromisPrint";
+import { ContractPromisPrint, FALLBACK_COMPANY, type CompanyConfig } from "@/components/ContractPromisPrint";
+import { useSystemSetting } from "@/hooks/useSystemSetting";
 import { PageHeader, StatusPill, EmptyState } from "@/components/Common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/_authenticated/contracts/$contractId")({
 function ContractDetail() {
   const { contractId } = Route.useParams();
   const [previewOpen, setPreviewOpen] = useState(false);
+  const companySetting = useSystemSetting<CompanyConfig>("company", FALLBACK_COMPANY);
 
   const { data, isLoading } = useQuery({
     queryKey: ["contract", contractId],
@@ -40,8 +43,13 @@ function ContractDetail() {
         supabase.from("installments").select("*").eq("contract_id", contractId).order("seq"),
         supabase.from("payments").select("*").eq("contract_id", contractId).order("paid_at", { ascending: false }),
       ]);
+      if (c.error) throw c.error;
+      if (ins.error) throw ins.error;
+      if (pay.error) throw pay.error;
       return { contract: c.data, installments: ins.data ?? [], payments: pay.data ?? [] };
     },
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
   });
 
   if (isLoading) return <div className="h-64 animate-pulse rounded-lg bg-muted" />;
@@ -50,13 +58,14 @@ function ContractDetail() {
   const c = data.contract;
   const today = todayISO();
   const printContract = () => {
-    document.body.classList.add("printing-contract");
-    const cleanup = () => document.body.classList.remove("printing-contract");
-    window.addEventListener("afterprint", cleanup, { once: true });
-    window.setTimeout(() => {
-      window.print();
-      window.setTimeout(cleanup, 1500);
-    }, 50);
+    const url = `/contract-print/${encodeURIComponent(contractId)}`;
+    const win = window.open(url, "_blank", "noopener,noreferrer");
+    if (!win) toast.error("เบราว์เซอร์บล็อกหน้าต่างพิมพ์ กรุณาอนุญาต Pop-up");
+  };
+
+  const refreshConfig = async () => {
+    await companySetting.refresh();
+    toast.success("โหลดข้อมูลบริษัทล่าสุดจาก DB แล้ว");
   };
 
   return (
@@ -68,7 +77,7 @@ function ContractDetail() {
       <PageHeader
         title={`สัญญาเลขที่ ${c.code}`}
         description={`${c.customers?.full_name ?? "-"} · ทะเบียน ${c.vehicles?.plate_no ?? "-"} · ${c.branches?.name ?? ""}`}
-        actions={<><StatusPill status={c.status} label={CONTRACT_STATUS_LABEL[c.status] ?? c.status} /><Button variant="outline" onClick={() => setPreviewOpen(true)}><Eye className="size-4" /> Preview สัญญา</Button></>}
+        actions={<><StatusPill status={c.status} label={CONTRACT_STATUS_LABEL[c.status] ?? c.status} /><Button variant="outline" onClick={() => void refreshConfig()} disabled={companySetting.isFetching}><RefreshCw className={companySetting.isFetching ? "size-4 animate-spin" : "size-4"} /> โหลดค่าล่าสุด</Button><Button variant="outline" onClick={() => setPreviewOpen(true)}><Eye className="size-4" /> Preview สัญญา</Button><Button onClick={printContract}><Printer className="size-4" /> พิมพ์</Button></>}
       />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -83,8 +92,8 @@ function ContractDetail() {
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-h-[96vh] overflow-hidden sm:max-w-[min(96vw,1100px)]">
-          <DialogHeader className="no-print"><DialogTitle>Preview สัญญากู้ยืมเงิน {c.code}</DialogTitle><DialogDescription>ข้อมูลถูกจัดลงแบบสัญญา A4 ภาษาไทยจากฐานข้อมูลของสัญญานี้โดยตรง</DialogDescription></DialogHeader>
-          <div className="max-h-[78vh] overflow-auto rounded-md bg-muted p-4"><ContractPromisPrint contract={c} /></div>
+          <DialogHeader className="no-print"><DialogTitle>Preview สัญญากู้ยืมเงิน {c.code}</DialogTitle><DialogDescription>ข้อมูลถูกจัดลงแบบสัญญา A4 ภาษาไทยจากฐานข้อมูลของสัญญาและ company master ล่าสุด</DialogDescription></DialogHeader>
+          <div className="max-h-[78vh] overflow-auto rounded-md bg-muted p-4"><ContractPromisPrint contract={c} company={companySetting.value} /></div>
           <DialogFooter className="no-print"><Button variant="outline" onClick={() => setPreviewOpen(false)}>ปิด</Button><Button onClick={printContract}><Printer className="size-4" /> พิมพ์ / Save PDF</Button></DialogFooter>
         </DialogContent>
       </Dialog>
