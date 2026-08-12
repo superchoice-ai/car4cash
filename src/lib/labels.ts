@@ -43,12 +43,12 @@ export const INSTALLMENT_STATUS_LABEL: Record<string, string> = {
 };
 
 export const APPROVAL_TYPE_LABEL: Record<string, string> = {
-  delete_record: "ขอลบข้อมูล",
+  delete_record: "ขอเปลี่ยนสถานะ/ยกเลิกข้อมูล",
   loan_approval: "ขออนุมัติสินเชื่อ",
   contract_cancel: "ขอยกเลิกสัญญา",
   restructure: "ขอปรับโครงสร้างหนี้",
   payment_void: "ขอยกเลิกใบเสร็จ",
-  other: "อื่นๆ",
+  other: "ขอแก้ไขข้อมูล",
 };
 
 export const APPROVAL_STATUS_LABEL: Record<string, string> = {
