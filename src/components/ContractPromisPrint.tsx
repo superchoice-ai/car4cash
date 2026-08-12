@@ -28,12 +28,14 @@ type ContractPrintData = {
     vehicle_type?: string | null;
     chassis_no?: string | null;
   } | null;
-  branches?: { name?: string | null } | null;
+  branches?: {
+    name?: string | null;
+    address?: string | null;
+  } | null;
 };
 
 const COMPANY_NAME = "บริษัท ธารทรัพย์ แอสเซท จำกัด";
 const COMPANY_ADDRESS = "40/6 ถ.จุลจอมเกล้า ต.ท่าข้าม อ.พุนพิน จ.สุราษฎร์ธานี";
-const CONTRACT_PLACE = "142/98 ม.1 ถ.วัดโพธิ์-บางใหญ่ ต.มะขามเตี้ย อ.เมือง จ.สุราษฎร์ธานี";
 
 function ageFromBirthDate(value?: string | null) {
   if (!value) return "—";
@@ -91,13 +93,14 @@ export function ContractPromisPrint({ contract }: { contract: ContractPrintData 
   const address = [customer.address, customer.district, customer.province, customer.postcode].filter(Boolean).join(" ") || "—";
   const carText = [vehicle.brand, vehicle.model].filter(Boolean).join(" ") || "—";
   const dueDay = contract.first_due_date ? new Date(`${contract.first_due_date}T00:00:00`).getDate() : "—";
+  const contractPlace = contract.branches?.address?.trim() || "—";
 
   return (
     <article className="contract-print-sheet bg-white text-black" aria-label={`สัญญากู้ยืมเงิน ${contract.code}`}>
       <header className="contract-heading">
         <div className="contract-no">เลขที่ <b>{contract.code}</b></div>
         <h1>สัญญากู้ยืมเงิน</h1>
-        <p>ทำที่ {CONTRACT_PLACE}</p>
+        <p>ทำที่ {contractPlace}</p>
         <p>วันที่ <Field min="8rem">{formatThaiDate(contract.start_date, "long")}</Field></p>
       </header>
 
