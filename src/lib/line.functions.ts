@@ -7,12 +7,13 @@ async function requireManager(context: any) {
   if (!data) throw new Error("เฉพาะผู้ดูแลระบบหรือผู้จัดการเท่านั้น");
 }
 
-/**
- * ทดสอบส่ง LINE จริงจากหน้าตั้งค่า
- * - ใช้ token ล่าสุดจาก integration_secrets
- * - ถ้าไม่กรอกผู้รับ จะใช้ system_settings.line_notify.to ล่าสุด
- * - ถ้ากรอกหลาย ID รองรับ comma / space / newline เหมือน config หลัก
- */
+function maskRecipient(value: string) {
+  const v = value.trim();
+  if (v.length <= 4) return "•".repeat(v.length);
+  return `${"•".repeat(Math.min(v.length - 4, 24))}${v.slice(-4)}`;
+}
+
+/** ทดสอบส่ง LINE จริง โดยแยก recipient override ออกจากข้อความอย่างชัดเจน */
 export const sendLineTest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { to?: string; text?: string }) => input)
@@ -28,15 +29,15 @@ export const sendLineTest = createServerFn({ method: "POST" })
     const result = await pushLineMessage(targets, text);
     return {
       ...result,
-      source: explicitTargets.length ? ("manual" as const) : ("system_settings" as const),
+      source: explicitTargets.length ? ("manual" as const) : ("integration_secrets" as const),
       enabled: config?.enabled ?? true,
       targetCount: targets.length,
     };
   });
 
 /**
- * บันทึกผู้รับ LINE แบบ server-side หลังตรวจสิทธิ์
- * อ่านค่า line_notify ล่าสุดก่อน merge เพื่อไม่ overwrite field อื่นจาก concurrent update
+ * บันทึกผู้รับ LINE เป็น confidential integration secret
+ * ไม่คืน raw recipient กลับไป browser และไม่เก็บ plain recipient ใน system_settings
  */
 export const saveLineRecipients = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -44,9 +45,23 @@ export const saveLineRecipients = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await requireManager(context);
 
-    const { normalizeLineTargets } = await import("./line.server");
+    const { LINE_SECRET_KEYS, normalizeLineTargets } = await import("./line.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const targets = normalizeLineTargets(data.to);
+    if (!targets.length) throw new Error("กรุณาระบุ LINE user ID / group ID อย่างน้อย 1 ราย");
+
+    const raw = targets.join(",");
+    const { error: secretError } = await supabaseAdmin
+      .from("integration_secrets")
+      .upsert({
+        key: LINE_SECRET_KEYS.notifyRecipients,
+        label: "LINE Notify – Recipients",
+        category: "line_oa",
+        value: raw,
+        updated_by: context.userId,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "key" });
+    if (secretError) throw secretError;
 
     const { data: current, error: readError } = await supabaseAdmin
       .from("system_settings")
@@ -56,16 +71,22 @@ export const saveLineRecipients = createServerFn({ method: "POST" })
     if (readError) throw readError;
 
     const currentValue = (current?.value ?? {}) as Record<string, unknown>;
+    delete currentValue.to;
     const value = {
       ...currentValue,
       enabled: data.enabled ?? true,
-      to: targets,
+      recipients_source: "integration_secrets",
     };
 
     const { error: writeError } = await supabaseAdmin
       .from("system_settings")
-      .upsert({ key: "line_notify", value: value as any }, { onConflict: "key" });
+      .upsert({ key: "line_notify", value: value as any, updated_at: new Date().toISOString() }, { onConflict: "key" });
     if (writeError) throw writeError;
 
-    return { ok: true, enabled: value.enabled, to: targets };
+    return {
+      ok: true,
+      enabled: value.enabled,
+      count: targets.length,
+      masked: targets.map(maskRecipient),
+    };
   });
