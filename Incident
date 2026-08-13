@@ -1,0 +1,53 @@
+ตรวจจาก **Production DB functions + RLS จริง** แล้วครับ ตอนนี้ 5 roles คือ `viewer, staff, approver, manager, admin`
+
+> หมายเหตุสำคัญ: **Role** กับ **ขอบเขตสาขา** เป็นคนละมิติ โดย `admin` เห็นทุกสาขาเสมอ ส่วน user role อื่นถ้า profile อยู่สาขา HQ ก็ถูก `is_hq()` ให้เห็นทุกสาขาเช่นกัน
+
+| สิทธิ์                                      |     Viewer    |     Staff     |    Approver   |    Manager    |     Admin    |
+| ------------------------------------------- | :-----------: | :-----------: | :-----------: | :-----------: | :----------: |
+| ดูข้อมูล ลูกค้า/สินเชื่อ/สัญญา/ชำระ/รายจ่าย |       ✅       |       ✅       |       ✅       |       ✅       |       ✅      |
+| เพิ่มลูกค้า                                 |  ⚠️ DB อนุญาต |       ✅       |  ⚠️ DB อนุญาต |       ✅       |       ✅      |
+| สร้างคำขอสินเชื่อ                           |  ⚠️ DB อนุญาต |       ✅       |  ⚠️ DB อนุญาต |       ✅       |       ✅      |
+| เพิ่มสัญญา                                  |  ⚠️ DB อนุญาต |       ✅       |  ⚠️ DB อนุญาต |       ✅       |       ✅      |
+| รับชำระ                                     |  ⚠️ DB อนุญาต |       ✅       |  ⚠️ DB อนุญาต |       ✅       |       ✅      |
+| บันทึกรายจ่าย                               |  ⚠️ DB อนุญาต |       ✅       |  ⚠️ DB อนุญาต |       ✅       |       ✅      |
+| แก้ไขข้อมูลทั่วไป                           |  ⚠️ DB อนุญาต |       ✅*      |  ⚠️ DB อนุญาต |       ✅*      |      ✅*      |
+| Action ที่กำหนด **Get Approver**            |  ต้อง Request |  ต้อง Request |  ต้อง Request |  ต้อง Request | ต้อง Request |
+| ดู Approval Queue ของสาขาที่เข้าถึงได้      |       ✅       |       ✅       |       ✅       |       ✅       |       ✅      |
+| **Approve / Reject**                        |       ❌       |       ❌       |       ✅       |       ✅       |       ✅      |
+| แก้ข้อมูลสาขา `branches`                    |       ❌       |       ❌       |       ❌       |       ❌       |       ✅      |
+| แก้ `system_settings`                       |       ❌       |       ❌       |       ❌       |       ❌       |       ✅      |
+| จัดการ Profiles/User                        | ตัวเองบางส่วน | ตัวเองบางส่วน | ตัวเองบางส่วน | ตัวเองบางส่วน |  ✅ ทั้งระบบ  |
+| Physical DELETE ตาม RLS ปัจจุบัน            |       ❌       |       ❌       |       ❌       |  ⚠️ DB อนุญาต | ⚠️ DB อนุญาต |
+
+`*` เฉพาะ action ที่เราไม่ได้กำหนดให้ต้อง Get Approver
+
+### ขอบเขตข้อมูล
+
+| สถานะ User                                        | ข้อมูลที่เข้าถึง                        |
+| ------------------------------------------------- | --------------------------------------- |
+| Viewer/Staff/Approver/Manager ที่สาขาปกติ         | **สาขาตัวเอง**                          |
+| Viewer/Staff/Approver/Manager ที่ profile อยู่ HQ | **ทุกสาขา** ตาม `is_hq()` ปัจจุบัน      |
+| Admin                                             | **ทุกสาขา** ไม่ว่าจะ profile อยู่สาขาใด |
+
+### ความหมายของแต่ละ Role ที่ควรล็อกเป็นมาตรฐาน
+
+**Viewer** — Read-only จริง ควรดู/search/report ได้ แต่ไม่ Create/Edit/Delete/Approve
+**Staff** — Operational user: ดู + เพิ่ม + ทำธุรกรรมตามหน้าที่ แต่ไม่มีสิทธิ์อนุมัติ
+**Approver** — มีสิทธิ์ **Approve/Reject เพิ่มจาก Staff-level capability ที่เราจะกำหนด**
+**Manager** — Operational management + **Approve/Reject** แต่ Get Approver actions ของตัวเองก็ยังต้องเข้า workflow
+**Admin** — System administration + ทุกสาขา + **Approve/Reject** แต่ก็ **ไม่มี bypass Get Approver**
+
+### มีช่องโหว่ของ Permission ที่พบจริง 🔴
+
+RLS ปัจจุบันยัง **ไม่ตรง Role Matrix ที่ควรเป็น** โดยเฉพาะ:
+
+1. `viewer` และ `approver` ยังสามารถ `INSERT/UPDATE` ตาราง operational หลายตัวได้ เพราะ RLS ตรวจเพียง `can_access_branch()` **ไม่ได้ตรวจ role**
+2. `manager/admin` ยังมี RLS สำหรับ **physical DELETE** ของ `customers`, `loan_applications`, `contracts`, `payments`, `cash_entries` ซึ่งขัด baseline ใหม่ที่ว่า Get Approver ต้องใช้ workflow เดียวกันทุก role
+3. หน้า Expenses ที่เราเพิ่งเจอใช้ช่องโหว่นี้จริง: `isManager → DELETE cash_entries` โดยตรง
+4. `approval_requests` อ่านได้โดย authenticated user ที่เข้าถึงสาขา แม้ Viewer/Staff แต่ **Approve/Reject ถูกล็อกถูกต้องแล้ว** เป็น `approver OR manager/admin`
+5. `system_settings` ถูกต้องกว่า: ทุก role อ่านได้ แต่ **Admin เท่านั้นที่แก้**
+6. `branches` เช่นเดียวกัน: authenticated อ่านได้ แต่ **Admin เท่านั้นที่แก้**
+
+ดังนั้นก่อน Phase B ผมมองว่ามีงานสำคัญกว่า คือทำ **Role & Permission Hardening** ให้ DB RLS + UI ตรงกับ Matrix นี้ โดยเฉพาะทำ `Viewer = read-only`, กำหนด Create/Edit ของ `Approver` ให้ชัด และเอา **Manager/Admin physical-delete bypass** ออก
+
+จุดเดียวที่ควรยืนยันก่อนล็อก Matrix เป็น SSOT คือ **Approver ต้องการให้มี operational CRUD เท่ากับ Staff แล้วเพิ่มสิทธิ์ Approve/Reject หรือให้ Approver เป็น “ดู + อนุมัติ” เท่านั้น?** ส่วน Viewer/Staff/Manager/Admin จากข้อมูลและ baseline ตอนนี้ค่อนข้างชัดแล้วครับ.
