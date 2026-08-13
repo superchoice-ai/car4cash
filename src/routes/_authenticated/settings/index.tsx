@@ -77,7 +77,7 @@ function SettingsPage() {
 
       <Card className="mb-4">
         <CardHeader className="pb-2"><CardTitle className="text-base">สาขาทั้งหมด ({data?.branches.length ?? 0})</CardTitle></CardHeader>
-        <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>รหัส</TableHead><TableHead>ชื่อสาขา</TableHead><TableHead>อำเภอ</TableHead><TableHead>ประเภท</TableHead></TableRow></TableHeader><TableBody>{(data?.branches ?? []).map((b) => <TableRow key={b.id}><TableCell className="tabular font-medium">{b.code}</TableCell><TableCell>{b.name}</TableCell><TableCell>{b.district ?? "-"}</TableCell><TableCell>{b.is_hq ? "สำนักงานใหญ่" : "สาขา"}</TableCell></TableRow>)}</TableBody></Table></CardContent>
+        <CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>รหัส</TableHead><TableHead>ชื่อสาขา</TableHead><TableHead>อำเภอ</TableHead><TableHead>ที่อยู่สาขา</TableHead></TableRow></TableHeader><TableBody>{(data?.branches ?? []).map((b) => <TableRow key={b.id}><TableCell className="tabular font-medium">{b.code}</TableCell><TableCell>{b.name}</TableCell><TableCell>{b.district ?? "-"}</TableCell><TableCell className="max-w-xl whitespace-normal">{b.address?.trim() || "-"}</TableCell></TableRow>)}</TableBody></Table></CardContent>
       </Card>
 
       <Card>
