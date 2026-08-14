@@ -49,3 +49,76 @@ The review must state:
 - post-change evidence.
 
 The Supabase proxy/approval-workflow regression is the standing lesson: changing shared infrastructure without tracing every consumer can silently break previously working approval behavior and force costly regression recovery. This must not happen again.
+
+
+# CRITICAL RULE — Interpretation Confirmation Before Reasoning or Action
+
+> [!CAUTION]
+> Repository artifacts are evidence of what exists; they are not automatic authorization, approved requirements, or permission to design or implement anything.
+
+## Mandatory interpretation gate
+
+Whenever a human or AI encounters anything that requires interpretation—including an enum value, schema object, migration, route, workflow name, roadmap item, TODO, comment, label, mockup, dormant code, “future” feature, existing partial implementation, or ambiguous user wording—it MUST NOT decide the intended business meaning by itself.
+
+Before treating that interpretation as a requirement, deriving a solution from it, planning implementation, extending an impact review on that basis, or changing anything, it MUST:
+
+1. State exactly what artifact or wording was found.
+2. State the proposed interpretation in plain language.
+3. Compare it against confirmed business rules, invariants, previous decisions, current scope, and explicit exclusions.
+4. Identify every conflict, ambiguity, assumption, and alternative interpretation.
+5. Ask the user/authorized owner to confirm the intended meaning.
+6. Wait for explicit confirmation before continuing reasoning that depends on that interpretation or performing any implementation.
+
+Read-only inspection is allowed only to gather enough evidence to expose the ambiguity and ask for confirmation. It does not authorize solution design or implementation.
+
+## Artifacts are not approval
+
+The presence of a name or capability in any repository artifact does not prove that it is:
+
+- an approved feature;
+- valid under current business rules;
+- in current scope;
+- safe to implement;
+- intended to be active;
+- authorized for production;
+- authorized for design or impact expansion.
+
+For example, an enum such as `restructure`, a dormant workflow, or a future roadmap entry MUST remain unsupported/fail-closed unless its business meaning and scope are explicitly confirmed.
+
+## Conflict precedence and stop rule
+
+Confirmed business invariants and explicit user decisions override inferred meaning from code, schema, enums, documentation, naming, or conventional industry practice.
+
+If a proposed interpretation conflicts with a confirmed rule, STOP. Do not “design an exception,” do not assume a future requirement, and do not continue merely because the user said “Continue.” Present the conflict and request a decision.
+
+“Continue” authorizes only the next work that is already confirmed and consistent with existing rules. It never confirms an unstated interpretation and never authorizes the next listed enum, phase, workflow, or roadmap item automatically.
+
+## No interpretation-by-convention
+
+Do not infer intent from best practices, common product behavior, technical possibility, industry terminology, or what a field/workflow normally means. Recommendations may be offered only after the actual business meaning is confirmed, and they must be clearly separated from confirmed requirements.
+
+## Fail-closed requirement
+
+If confirmation is missing, unclear, contradictory, or not attributable to an authorized decision maker:
+
+- keep the feature unsupported or disabled;
+- keep workflow dispatch fail-closed;
+- do not modify code, schema, data, documentation conclusions, or production behavior based on the interpretation;
+- record the unresolved question and wait.
+
+## Required evidence record
+
+The confirmation record must include:
+
+- artifact or wording that triggered interpretation;
+- proposed interpretation;
+- conflicts checked;
+- alternatives considered;
+- explicit confirmed meaning;
+- confirmer/decision owner;
+- scope authorized;
+- items explicitly not authorized.
+
+## Standing lessons
+
+The Supabase Proxy regression showed the danger of technical change without full dependency impact review. The `restructure` misunderstanding showed that even a detailed impact review is unsafe when it begins from an unconfirmed business interpretation. Both gates are mandatory: first confirm meaning, then perform full-project impact review.
