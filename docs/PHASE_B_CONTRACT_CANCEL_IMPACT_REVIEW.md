@@ -260,4 +260,4 @@ For future implementation, rollback must be designed before migration:
 
 The `contract_cancel` Impact Review is complete and Gates A–E are resolved. The current Phase A fail-closed behavior remains correct until implementation is explicitly authorized.
 
-The next gate is a separate implementation approval covering the exact migration/RPC, UI producer, collection guards, report filters, demo fixture, and regression execution. This document does not itself authorize those runtime changes.
+The next gate is explicit confirmation of the F0 evidence-and-guardrail decisions recorded in `PHASE_B_F0_EVIDENCE_GUARDRAILS_IMPACT_REVIEW.md`. Only after those decisions may a separate implementation plan be prepared for review. A further explicit authorization is still required before any migration/RPC, UI producer, collection guard, report filter, demo fixture, or regression execution change. This document does not authorize runtime changes.
