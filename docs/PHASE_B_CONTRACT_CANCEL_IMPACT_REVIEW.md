@@ -3,7 +3,7 @@
 - **Repository:** `superchoice-ai/tansub`
 - **Environment reviewed:** Lovable/Supabase demo environment; not production
 - **Review status:** IMPACT REVIEW COMPLETE — BUSINESS DECISIONS RECORDED
-- **Implementation status:** NOT AUTHORIZED / NOT IMPLEMENTED
+- **Implementation status:** PLAN RECORDED / NOT AUTHORIZED / NOT IMPLEMENTED
 - **Approval Engine status:** `contract_cancel` remains fail-closed. Impact decisions are complete; runtime implementation still requires a separate explicit approval.
 - **Sequence:** This review covers `contract_cancel` only. It does not authorize `restructure` or `payment_void`.
 
@@ -260,4 +260,4 @@ For future implementation, rollback must be designed before migration:
 
 The `contract_cancel` Impact Review is complete and Gates A–E are resolved. The current Phase A fail-closed behavior remains correct until implementation is explicitly authorized.
 
-The next gate is explicit confirmation of the F0 evidence-and-guardrail decisions recorded in `PHASE_B_F0_EVIDENCE_GUARDRAILS_IMPACT_REVIEW.md`. Only after those decisions may a separate implementation plan be prepared for review. A further explicit authorization is still required before any migration/RPC, UI producer, collection guard, report filter, demo fixture, or regression execution change. This document does not authorize runtime changes.
+The five F0 principles are confirmed and the separate `PHASE_B_CONTRACT_CANCEL_IMPLEMENTATION_PLAN.md` is recorded. The next gate is resolution of its unresolved interpretation gates followed by explicit authorization for the exact first change set. No migration/RPC, UI producer, collection guard, report filter, fixture, regression execution, or runtime change is authorized yet.
