@@ -97,12 +97,13 @@ This rule applies to customer, loan application, contract, payment, and cash-ent
 
 After approval only, the executor must apply every relationship identified by the workflow-specific impact review. The review must explicitly enumerate authoritative and derived tables, reports, balances, schedules, cashbook entries, notifications, and audit evidence. No generic “update related tables” assumption is acceptable.
 
-### Phase B sequencing gate
+### Phase B scope and sequencing gate
 
-Future approval types are processed one at a time in this order:
+The currently confirmed Phase B scope contains only these workflows, processed one at a time:
 
 1. `contract_cancel`
-2. `restructure`
-3. `payment_void`
+2. `payment_void`
 
-Each type requires a separate recorded full-project impact review and explicit approval before it is added to the Approval Engine. Completing one type does not authorize implementation of the next.
+`restructure` is **Deferred / Unsupported** under the current confirmed business rule. Once a contract has any payment event, principal/loan amount, interest rate, and term/installment count remain locked. Its presence in an enum, schema, migration, document, roadmap, or code branch is not authorization to interpret, design, or implement it.
+
+Each active workflow requires a separate recorded full-project impact review and explicit approval before it is added to the Approval Engine. Completing one workflow does not authorize implementation of the next. Unsupported workflows must remain fail-closed.
