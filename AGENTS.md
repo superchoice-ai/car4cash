@@ -122,3 +122,59 @@ The confirmation record must include:
 ## Standing lessons
 
 The Supabase Proxy regression showed the danger of technical change without full dependency impact review. The `restructure` misunderstanding showed that even a detailed impact review is unsafe when it begins from an unconfirmed business interpretation. Both gates are mandatory: first confirm meaning, then perform full-project impact review.
+
+
+# CRITICAL RULE — System Readiness Gate
+
+> [!CAUTION]
+> This gate is mandatory before every actionable work session, continuation, development task, migration, deployment, workflow activation, external write, or production/data operation. A green status page alone is not proof that the project's actual path is healthy.
+
+## Required readiness header
+
+Before reasoning toward implementation or taking action, state and record:
+
+- conversation/task scope and explicit exclusions;
+- repository, branch, phase/change set, and target environment (local/demo/staging/production);
+- exact systems and dependency path that the task will touch;
+- operations authorized now and operations that remain unauthorized;
+- official provider status checked, timestamp, timezone, and relevant component/region;
+- read-only smoke-test evidence for the actual project path;
+- final decision: `GO`, `LIMITED GO`, or `NO-GO`.
+
+Repeat the gate whenever scope changes, the environment changes, a new dependency is introduced, an incident begins, or more than 15 minutes have passed before a high-risk write.
+
+## Two-layer readiness check
+
+1. **Provider status:** Check every relevant provider's official status page. Never use an unofficial outage detector as acceptance evidence.
+2. **Project-path probe:** Run the smallest safe read-only check through the same route that the work will use. Examples include repository read, `SELECT now()`, a non-mutating API health request, webhook dry-run, or dependency-specific connectivity check.
+
+If a provider has no verified public status page, record `UNKNOWN — no verified public status page` and require a direct read-only probe. Do not silently substitute a third-party status site.
+
+## Fail-closed and degraded-mode rules
+
+- `NO-GO`: Do not migrate, deploy, activate, merge, change production data, or perform external writes when a relevant dependency is degraded, unknown without a successful probe, returning timeouts/5xx, or inconsistent with the expected environment.
+- `LIMITED GO`: Read-only inspection, local analysis, documentation, and isolated GitHub work may continue only when they do not depend on or write through the degraded path.
+- A timeout from Lovable Database Query Gateway/MCP does not by itself prove that the database is damaged or that a migration caused a lock. Correlate official incidents, direct database health, query-path behavior, logs, locks, and migration evidence before assigning root cause.
+- Never bypass approval, permission, audit, regression, or data-integrity controls to work around an unavailable provider.
+
+## Alternate-path and synchronization rule
+
+Work may be moved to another healthy system—such as preparing code or documentation in GitHub—only when the alternate path is explicitly within scope and does not require the unhealthy dependency. Before reflecting changes back into Lovable or another target system:
+
+1. re-run this readiness gate for the target path;
+2. confirm branch/environment alignment and inspect the complete diff;
+3. perform the mandatory impact review and interpretation confirmation;
+4. use the normal supported synchronization path;
+5. run regression tests after synchronization.
+
+Do not force-push, rewrite published history, manually patch generated state, or treat GitHub completion as proof that Lovable, Supabase, n8n, or production has applied the change.
+
+## Official status registry
+
+This registry is the minimum known project dependency set. Add any dependency discovered by the task before work begins.
+
+| System | Official status URL | Relevant scope |
+|---|---|---|
+| GitHub | https://www.githubstatus.com/ | Git operations, API and repository sync |
+| Lovable | https://status.lovable.dev/ | Editor, Cloud, MCP and API |
+| Supabase | https://status.supabase.com/ | Database, API Gateway, Auth, Edge Functions and Management API |
