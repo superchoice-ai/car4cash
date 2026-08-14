@@ -2,9 +2,9 @@
 
 - **Repository:** `superchoice-ai/tansub`
 - **Environment reviewed:** Lovable/Supabase demo environment; not production
-- **Review status:** DRAFT — IMPACT REVIEW ONLY
+- **Review status:** IMPACT REVIEW COMPLETE — BUSINESS DECISIONS RECORDED
 - **Implementation status:** NOT AUTHORIZED / NOT IMPLEMENTED
-- **Approval Engine status:** `contract_cancel` remains fail-closed and must not be added until every decision gate in this document is resolved and explicitly approved.
+- **Approval Engine status:** `contract_cancel` remains fail-closed. Impact decisions are complete; runtime implementation still requires a separate explicit approval.
 - **Sequence:** This review covers `contract_cancel` only. It does not authorize `restructure` or `payment_void`.
 
 ## 1. Requested outcome
@@ -84,11 +84,11 @@ Current Phase A application cancellation checks for contracts whose status is no
 | Approval | `approval_requests` | Store request and proposed operation only; no early mutation |
 | Approval | `execute_approval_request()` | Needs an exact fail-closed whitelist branch only after approval |
 | Contract | `contracts` | Logical state transition to `cancelled`; never physical delete |
-| Application | `loan_applications` | Currently becomes `contracted` when contract is created; post-cancel state must be explicitly decided |
-| Schedule | `installments` | Existing unpaid schedule must stop appearing as collectible/overdue while audit history remains |
+| Application | `loan_applications` | After approved cancellation, status becomes `cancelled` |
+| Schedule | `installments` | After approved cancellation, snapshot the schedule to audit evidence, then delete installment rows to prevent growth and remove them from active queues |
 | Payment | `payments` | Historical existence is the cancellation lock; checking only `voided=false` is insufficient |
-| Disbursement | `disbursements` | Contract creation normally records loan payout; accounting treatment on cancellation is unresolved |
-| Vehicle | `vehicles.book_status` | Currently becomes `received`; whether cancellation returns/releases the book must be decided |
+| Disbursement | `disbursements` | Preserve the payout record as historical fact; recovery is an employee/organization process outside this workflow |
+| Vehicle | `vehicles.book_status` | Do not mark returned automatically; retain current status until a separate real-world return confirmation |
 | Cashbook | `cash_entries` | May reference contract/payment; cancellation must not silently void real money movement |
 | Collection | `collection_activities` and overdue UI | Cancelled contracts/installments must not continue in active collection queues |
 | Reports | `src/lib/reports.ts` | Outstanding/debtor/overdue/closed reports filter by status and installment state |
@@ -149,55 +149,33 @@ The payment-history gate must use historical existence, not only active payment 
 9. **Direct-update risk:** current broad update policies may allow state changes outside the executor; permission hardening remains a production gate.
 10. **Partial-update risk:** client-side multi-step mutation could leave contradictory states; implementation must be database-transactional.
 
-## 8. Decision gates requiring explicit business approval
+## 8. Resolved business decision gates
 
-No implementation may start until these are decided:
+The following decisions are confirmed for the implementation design:
 
-### Gate A — Meaning of cancellation after disbursement
+### Gate A — Disbursement responsibility
 
-Choose the business outcome when a disbursement exists but no customer payment has occurred:
+**Resolved:** Contract cancellation does not reverse, delete, recover, or otherwise manage the disbursed money. Recovery is the responsibility of employees/organization. The existing `disbursements` row remains as historical evidence.
 
-- cancellation prohibited after disbursement;
-- cancellation allowed only after documented recovery/reversal of disbursement;
-- cancellation allowed with a separate receivable/recovery status and workflow.
+### Gate B — Application status
 
-**Recommended:** do not allow simple cancellation to erase or neutralize a disbursement. Require an explicit recovery/reversal prerequisite.
+**Resolved:** On approved cancellation, both `contracts.status` and `loan_applications.status` become `cancelled`.
 
-### Gate B — Application status after contract cancellation
+Repeated future applications and cancellations should be accumulated as a risk signal. They must not automatically blacklist a customer; a separately reviewed human decision may classify repeated suspicious behavior as blacklist.
 
-Choose one:
+### Gate C — Installment treatment and storage growth
 
-- `cancelled`: application and contract both end;
-- return to `approved`: permits creation of a replacement contract;
-- keep `contracted` with the cancelled contract retained as history.
+**Resolved:** After approval only, capture the original schedule in audit evidence and delete the contract's `installments` rows inside the same transaction. This removes non-operative schedules and controls growth in one of the largest tables.
 
-**Recommended:** use `cancelled` for true cancellation; a replacement/reissue should be a separately reviewed workflow.
+For debt-bearing edits made before any payment event, replace the schedule atomically: snapshot/delete the old installments and generate the complete new schedule. `cash_entries` and `cash_entry_lines` are not deleted by contract cancellation. If any payment or payment-linked cash entry exists, cancellation fails closed.
 
-### Gate C — Installment preservation
+### Gate D — Vehicle registration book
 
-Choose how cancelled schedules are represented:
+**Resolved:** Contract cancellation does not automatically set `vehicles.book_status = returned`. Physical return is outside this executor and should later use a separate confirmation workflow. Until confirmed, the existing status remains.
 
-- retain installments and exclude them through contract status;
-- mark each unpaid installment `waived`;
-- introduce a dedicated cancelled schedule state.
+### Gate E — Collection history and future work
 
-**Recommended:** preserve rows for audit and exclude using contract status; do not misuse `waived` without business approval.
-
-### Gate D — Vehicle book status
-
-Decide whether approval:
-
-- changes `book_status` to `returned`;
-- keeps `received` until a separate physical handover confirmation;
-- introduces a pending-return state/workflow.
-
-**Recommended:** do not mark `returned` until physical/legal return is confirmed.
-
-### Gate E — Existing collection activities
-
-Decide whether to retain them as immutable history while stopping new collection work.
-
-**Recommended:** retain history; exclude the cancelled contract from new overdue and collection queues.
+**Resolved best practice:** Preserve all existing `collection_activities` as immutable operational history. After approved cancellation, new collection activities must be rejected for the cancelled contract, and collection/overdue queries must include only collectible contract statuses. Deleting installments removes the cancelled schedule from current overdue queues; contract status remains an additional defensive filter.
 
 ## 9. Recommended lowest-risk design
 
@@ -205,12 +183,12 @@ Subject to the decision gates:
 
 1. UI creates a `contract_cancel` approval request only.
 2. A dedicated SECURITY DEFINER executor performs approval-time validation.
-3. No physical deletion of contract, installments, disbursement, payment, cashbook, collection, or audit records.
-4. Contract becomes `cancelled` only after all financial/disbursement prerequisites pass.
-5. Application, vehicle-book, schedule, collection, reporting, and notification effects are explicit—not inferred.
-6. Historical payment existence permanently blocks cancellation.
-7. One atomic transaction applies the complete approved state.
-8. Unsupported state combinations remain fail-closed.
+3. Never physically delete contracts, disbursements, payments, cashbook, collection, or audit records. Installments are the approved exception: snapshot them to audit evidence, then delete them atomically after cancellation approval.
+4. Contract and linked application become `cancelled`; disbursement history remains unchanged because recovery is outside this workflow.
+5. Delete installments only after the audit snapshot succeeds. Keep the vehicle-book status unchanged until a separate physical-return confirmation.
+6. Historical payment existence—including voided rows or payment-linked cash entries—permanently blocks cancellation.
+7. Retain collection history, block new collection work, and exclude cancelled contracts defensively in collection/overdue queries.
+8. One atomic transaction applies the complete approved state; unsupported combinations remain fail-closed.
 
 ## 10. Regression test plan
 
@@ -235,7 +213,7 @@ Subject to the decision gates:
 
 - Cancelled contract is absent from active debtor and overdue reports.
 - Cancelled installments are absent from collection queues.
-- Historical contract, installment, disbursement, cashbook, and collection evidence remains queryable.
+- Historical contract, disbursement, cashbook, and collection evidence remains queryable; deleted installment details are preserved in the approval/audit schedule snapshot.
 - Contract detail and print history remain available and visibly cancelled.
 - Dashboard totals exclude cancelled debt without deleting actual financial movement.
 - Notifications and audit logs identify requester, approver, reason, timestamp, before/after, and affected objects.
@@ -250,7 +228,20 @@ Subject to the decision gates:
 - Rejection behavior remains mutation-free.
 - Supabase `.from()`, `.rpc()`, auth/session, RLS, and server client paths remain operational.
 
-## 11. Rollback boundary
+## 11. Demo database evidence
+
+Read-only inspection of the current Lovable/Supabase demo database found:
+
+- 34 contracts: 14 active, 4 closed, and 16 overdue.
+- All 34 contracts already have at least one payment row; none is eligible for `contract_cancel` testing.
+- All 34 contracts have disbursement records.
+- 768 installment rows and no orphan installments.
+- 319 cash entries; 312 are payment-linked, with no contract-income cash entry lacking a payment link.
+- 16 collection activities and none belongs to a cancelled contract.
+
+A dedicated demo fixture is therefore mandatory: create a reviewed test application/contract with installments and disbursement but no payment event. Existing demo contracts must not be altered merely to manufacture eligibility.
+
+## 12. Rollback boundary
 
 Because no runtime implementation exists in this review, current rollback is documentation-only.
 
@@ -263,8 +254,8 @@ For future implementation, rollback must be designed before migration:
 - reconciliation query for any partially processed demo records;
 - no production cutover until demo regression evidence passes.
 
-## 12. Current conclusion
+## 13. Current conclusion
 
-`contract_cancel` is **not ready for implementation** because the treatment of disbursement, application status, installment preservation, and vehicle-book return is unresolved. The current Phase A fail-closed behavior is correct and must remain in place.
+The `contract_cancel` Impact Review is complete and Gates A–E are resolved. The current Phase A fail-closed behavior remains correct until implementation is explicitly authorized.
 
-The next authorized action is business review and decision on Gates A–E. Only after those decisions are recorded may an implementation impact update and explicit implementation approval be requested.
+The next gate is a separate implementation approval covering the exact migration/RPC, UI producer, collection guards, report filters, demo fixture, and regression execution. This document does not itself authorize those runtime changes.
