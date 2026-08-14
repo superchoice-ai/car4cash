@@ -57,7 +57,7 @@ Required before any `contract_cancel` implementation:
 4. Protection against duplicate pending cancellation requests and repeated execution.
 5. Exact cancellation audit snapshot and defensive report/collection filters.
 
-F0 is currently under Impact Review only.
+F0 full-project evidence review is complete. Decisions and implementation authorization remain pending.
 
 ### Workflow W1 — contract_cancel
 
@@ -106,7 +106,7 @@ Payment-void fixtures must use complete allocation evidence; pre-ledger historic
 | Gate | Required outcome |
 |---|---|
 | PB-SCOPE | Only `contract_cancel` and `payment_void`; `restructure` stays fail-closed |
-| PB-F0 | Evidence/guardrail decisions confirmed |
+| PB-F0 | Evidence review complete; guardrail decisions still require explicit confirmation |
 | PB-W1 | Contract-cancel implementation separately approved and tested |
 | PB-F1 | Transactional payment/allocation foundation separately approved and tested |
 | PB-W2 | Payment-void Gates A–K resolved; implementation separately approved and tested |
@@ -118,7 +118,7 @@ Payment-void fixtures must use complete allocation evidence; pre-ledger historic
 
 The corrected Phase B plan is:
 
-1. Complete F0 Impact Review and receive decisions.
+1. F0 evidence review is complete; receive explicit decisions.
 2. Seek separate authorization before implementing F0 or `contract_cancel`.
 3. Complete F1 and `payment_void` decisions later, as a separate workflow.
 4. Keep `restructure` unsupported and fail-closed.
