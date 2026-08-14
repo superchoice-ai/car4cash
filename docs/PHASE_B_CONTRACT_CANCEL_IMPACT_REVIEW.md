@@ -111,7 +111,7 @@ A `contract_cancel` request should fail closed unless all conditions pass at bot
 7. The payload identifies the exact contract and contains a mandatory cancellation reason.
 8. All expected related records still match the reviewed preconditions when the approver decides.
 
-The payment-history gate must use historical existence, not only active payment totals. A separate immutable payment-event indicator or equivalent audit-safe evidence may be required; this is not yet designed.
+The payment-history gate must use historical existence, not only active payment totals. Before enabling this workflow, hard deletion of payment evidence must be prevented and an audit-safe payment-event history must remain queryable. The current manager DELETE policy on `payments` is therefore an implementation blocker for `contract_cancel`, even if broader role redesign remains deferred.
 
 ## 6. Pending/rejected/approved behavior
 
@@ -138,15 +138,15 @@ The payment-history gate must use historical existence, not only active payment 
 
 ## 7. Data-integrity risks
 
-1. **Disbursement risk:** a contract may have already paid money to the customer even though no installment payment has been received. Cancelling without accounting treatment can hide a real receivable/cash movement.
-2. **Installment risk:** leaving unpaid installments active causes cancelled contracts to remain overdue; deleting them destroys audit history.
-3. **Application-state risk:** setting the application back to `approved`, to `cancelled`, or retaining `contracted` produces different operational meanings.
-4. **Vehicle-book risk:** automatically returning the book may be legally/operationally incorrect if payout recovery is unresolved.
-5. **Payment-history loophole:** counting only non-void payments lets a void reopen cancellation, contrary to the confirmed rule.
+1. **Disbursement risk:** preserve the disbursement record unchanged; recovery remains an employee/organization responsibility outside this workflow.
+2. **Installment risk:** snapshot the complete schedule in audit evidence before deleting installments atomically after approval.
+3. **Application-state risk:** set both application and contract to `cancelled` only after approval.
+4. **Vehicle-book risk:** keep the existing book status; do not represent a physical return until separately confirmed.
+5. **Payment-history loophole:** counting only non-void payments—or allowing payment hard delete—can reopen cancellation contrary to the confirmed rule. Payment evidence must be immutable/audit-safe before this workflow is enabled.
 6. **Report risk:** cancelled contracts may still appear in totals if reports use broad status queries.
 7. **Concurrency risk:** a payment could be inserted between eligibility check and approval unless rows/constraints are coordinated.
 8. **Duplicate-request risk:** multiple pending cancellations could race.
-9. **Direct-update risk:** current broad update policies may allow state changes outside the executor; permission hardening remains a production gate.
+9. **Direct-update risk:** current broad policies include manager hard delete on `payments`. Targeted payment-evidence protection is a mandatory `contract_cancel` implementation gate; broader role/permission redesign may remain deferred.
 10. **Partial-update risk:** client-side multi-step mutation could leave contradictory states; implementation must be database-transactional.
 
 ## 8. Resolved business decision gates
@@ -188,7 +188,8 @@ Subject to the decision gates:
 5. Delete installments only after the audit snapshot succeeds. Keep the vehicle-book status unchanged until a separate physical-return confirmation.
 6. Historical payment existence—including voided rows or payment-linked cash entries—permanently blocks cancellation.
 7. Retain collection history, block new collection work, and exclude cancelled contracts defensively in collection/overdue queries.
-8. One atomic transaction applies the complete approved state; unsupported combinations remain fail-closed.
+8. Prevent hard deletion from erasing payment-event evidence before enabling cancellation eligibility checks.
+9. One atomic transaction applies the complete approved state; unsupported combinations remain fail-closed.
 
 ## 10. Regression test plan
 
@@ -197,6 +198,7 @@ Subject to the decision gates:
 - Contract with zero payment history can submit a request when all other prerequisites pass.
 - Contract with one active payment cannot submit or approve cancellation.
 - Contract with one voided payment still cannot submit or approve cancellation.
+- Payment hard deletion is blocked or leaves immutable event evidence; deleting a payment cannot create cancellation eligibility.
 - Closed contract cannot be cancelled.
 - Already-cancelled contract cannot be cancelled again.
 - Duplicate pending request is rejected.
