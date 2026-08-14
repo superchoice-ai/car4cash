@@ -3,7 +3,7 @@
 - **Repository:** `superchoice-ai/tansub`
 - **Environment reviewed:** Lovable/Supabase demo; not production
 - **Purpose:** Prerequisite review for `contract_cancel`
-- **Status:** IMPACT REVIEW RECORDED — DECISIONS REQUIRED
+- **Status:** FULL-PROJECT EVIDENCE REVIEW COMPLETE — BLOCKERS AND DECISIONS RECORDED
 - **Implementation:** NOT AUTHORIZED / NOT STARTED
 - **Out of scope:** `restructure`, runtime code, schema migration, UI, RPC, RLS, data changes, and deployment
 
@@ -166,3 +166,133 @@ F0 must later be split from workflow implementation into its own reversible, rev
 F0 Impact Review is recorded. The safest current direction is an immutable first-payment marker, preserved financial evidence, shared database locking, duplicate/replay protection, audit-before-delete, and defensive consumer filters.
 
 No runtime change has been made. Implementation planning must wait for explicit confirmation of the decisions in Section 5.
+
+
+## 9. Repository-wide evidence verification
+
+This section records the read-only whole-project trace performed after the initial F0 review. It confirms actual current behavior; it does not authorize a fix.
+
+### 9.1 Payment recording is non-atomic
+
+**File:** `src/routes/_authenticated/payments/index.tsx`
+
+The browser currently:
+
+1. updates each affected installment;
+2. inserts the payment;
+3. updates contract outstanding/status;
+4. inserts the cash entry;
+5. inserts cash-entry lines.
+
+Each step is a separate Supabase call. A failure or concurrent cancellation can leave partial or stale state. This confirms that a safe payment/cancellation race cannot be solved only in UI.
+
+### 9.2 Current “payment exists” checks violate the confirmed rule
+
+**Files:**
+
+- `src/routes/_authenticated/applications/index.tsx`
+- `supabase/migrations/20260813195500_approval_executor_phase_a_fail_closed.sql`
+
+Both the application edit screen and Approval Executor currently count only payments where `voided = false`.
+
+This is incorrect under the confirmed rule: once any payment event has occurred, debt-bearing fields and cancellation/deletion remain locked even if the payment is later voided. Therefore both UI guidance and database authority require one shared permanent definition of “ever paid.” Fixing only one layer would leave a bypass or misleading screen.
+
+### 9.3 Existing application cancellation conflicts with payoff semantics
+
+**File:** `supabase/migrations/20260813195500_approval_executor_phase_a_fail_closed.sql`
+
+The current Phase A `delete_record + loan_applications + cancel` branch blocks cancellation only when a linked contract has status other than `closed`. This means a linked closed contract can pass and the application can become `cancelled`.
+
+That conflicts with the confirmed rule: payoff/closure is normal contract completion, not cancellation of the loan request. This existing path is a Phase B regression blocker and must be separated from the new `contract_cancel` meaning. No interpretation or code change is authorized by this finding alone.
+
+### 9.4 Hard-delete can erase or cascade evidence
+
+**File:** `supabase/migrations/20260731165059_0881073d-26d7-4f95-abbd-2f4862f2dcf8.sql`
+
+Current grants/policies allow manager deletion of:
+
+- contracts;
+- installments;
+- payments;
+- collection activities.
+
+Payments and collection activities reference contracts with `ON DELETE CASCADE`; payment `installment_id` uses `ON DELETE SET NULL`.
+
+Therefore a manager-level physical delete can erase the evidence needed for eligibility, history, reporting, and audit. F0 cannot rely only on current rows while those paths remain open.
+
+### 9.5 Collections need both UI filtering and database enforcement
+
+**File:** `src/routes/_authenticated/collections/index.tsx`
+
+The overdue queue reads overdue installments without filtering the linked contract lifecycle. Creating a collection activity inserts directly from the browser and does not revalidate that the contract is still collectible.
+
+Deleting installments during approved cancellation removes normal queue rows, but that alone is not sufficient. A stale screen or direct write could still create activity. Required protection is:
+
+- defensive UI query filtering; and
+- database rejection of new collection activity for `cancelled` contracts.
+
+Existing collection history must remain unchanged.
+
+### 9.6 Dashboard and reports have different protection levels
+
+**Files:**
+
+- `src/routes/_authenticated/dashboard.tsx`
+- `src/lib/reports.ts`
+
+The dashboard calculates overdue totals directly from installments without joining/filtering contract status. The main report library generally fetches debtors using `active` and `overdue` contract statuses, but its installment bucket query itself is broader.
+
+Because approved cancellation deletes installments, current totals may appear correct afterward, but defensive status filtering is still required to protect stale, inconsistent, or partially migrated data. Historical cash reporting already excludes logically void cash entries and must continue preserving actual cash history.
+
+### 9.7 Approval dispatch is already database-centered
+
+**Files:**
+
+- `src/routes/_authenticated/approvals/index.tsx`
+- `supabase/migrations/20260813195500_approval_executor_phase_a_fail_closed.sql`
+
+The approval UI calls one `execute_approval_request` RPC, and the current Phase A migration explicitly states that `contract_cancel`, `restructure`, and `payment_void` are not implemented. This fail-closed boundary is correct and must be preserved.
+
+The new workflow should use a dedicated cancellation executor dispatched from the Approval Engine rather than adding browser-side reflection or loosely extending multiple UI writes.
+
+### 9.8 Existing lifecycle/history presentation
+
+**File:** `src/routes/_authenticated/contracts/$contractId.tsx`
+
+Contract detail already loads all payments and visually marks voided rows, which supports preserving historical receipts. It also loads installments directly; after approved cancellation and installment deletion, the page needs a clear cancelled state and audit-schedule history source rather than appearing as an unexplained empty schedule.
+
+## 10. Confirmed F0 blocker list
+
+F0 is not implementation-ready until all items below are explicitly accepted in an implementation plan:
+
+1. Replace every `voided = false` eligibility check used for debt-bearing locks with one permanent “ever paid” authority.
+2. Prevent historical or future hard-delete from reopening eligibility.
+3. Correct the existing closed-contract application-cancel conflict without changing normal payoff history.
+4. Move payment authority and cancellation approval to coordinated database transactions sharing the same contract lock.
+5. Add database protection against payment or collection creation after cancellation.
+6. Enforce one pending cancellation request per contract and idempotent execution.
+7. Define durable installment snapshot storage and cancelled-contract history presentation.
+8. Add defensive lifecycle filters to dashboard, overdue, collection, and report consumers.
+9. Preserve Phase A behavior and Supabase client/RPC/Proxy regression coverage.
+10. Keep `restructure` unsupported and fail-closed.
+
+## 11. Updated recommendation
+
+The lowest-risk direction remains:
+
+- an immutable database-maintained `first_payment_at` marker for the fast eligibility decision;
+- preserved payment/cash/audit records as supporting evidence;
+- a database trigger or transactional payment RPC that sets the marker and never clears it;
+- conservative legacy backfill from every payment row, including voided rows, plus payment-linked cash evidence;
+- fail-closed handling where historical evidence conflicts or cannot be proven;
+- shared contract-row locking for payment and cancellation;
+- removal of hard-delete as a correction method;
+- a dedicated `contract_cancel` executor, not browser reflection.
+
+A marker by itself is not enough unless direct inserts, legacy backfill, hard-delete policy, and concurrency are addressed together.
+
+## 12. Review result
+
+The F0 full-project Impact Review is now complete at the evidence level. It has identified current consumers, two existing business-rule conflicts, deletion/cascade risks, concurrency risks, and the required regression boundary.
+
+No code, schema, UI, RPC, RLS, database record, fixture, or deployment was changed. The next step is explicit confirmation of the F0 decisions before preparing a separate implementation plan.
