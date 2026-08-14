@@ -5,7 +5,7 @@
 - **Review status:** DRAFT — IMPACT REVIEW ONLY
 - **Implementation status:** NOT AUTHORIZED / NOT IMPLEMENTED
 - **Approval Engine status:** `payment_void` remains fail-closed until every decision gate is resolved and explicitly approved.
-- **Sequence:** This is the third Phase B workflow. It does not authorize runtime implementation.
+- **Sequence:** This is the second active Phase B workflow, after `contract_cancel`. `restructure` is out of scope and unsupported. This review does not authorize runtime implementation.
 
 ## 1. Meaning and boundary
 
