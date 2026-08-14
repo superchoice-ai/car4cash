@@ -106,7 +106,7 @@ Payment-void fixtures must use complete allocation evidence; pre-ledger historic
 | Gate | Required outcome |
 |---|---|
 | PB-SCOPE | Only `contract_cancel` and `payment_void`; `restructure` stays fail-closed |
-| PB-F0 | Evidence review complete; guardrail decisions still require explicit confirmation |
+| PB-F0 | Evidence review complete; five guardrail principles confirmed; implementation not authorized |
 | PB-W1 | Contract-cancel implementation separately approved and tested |
 | PB-F1 | Transactional payment/allocation foundation separately approved and tested |
 | PB-W2 | Payment-void Gates A–K resolved; implementation separately approved and tested |
@@ -118,9 +118,10 @@ Payment-void fixtures must use complete allocation evidence; pre-ledger historic
 
 The corrected Phase B plan is:
 
-1. F0 evidence review is complete; receive explicit decisions.
-2. Seek separate authorization before implementing F0 or `contract_cancel`.
-3. Complete F1 and `payment_void` decisions later, as a separate workflow.
-4. Keep `restructure` unsupported and fail-closed.
+1. F0 evidence review and five business decisions are complete.
+2. Resolve the remaining implementation-plan interpretation gates.
+3. Seek separate authorization for CS-0 baseline evidence only.
+4. Complete F1 and `payment_void` decisions later, as a separate workflow.
+5. Keep `restructure` unsupported and fail-closed.
 
 This document authorizes no code, schema, UI, RPC, RLS, data, fixture, or deployment change.
