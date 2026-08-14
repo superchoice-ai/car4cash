@@ -3,7 +3,7 @@
 - **Repository:** `superchoice-ai/tansub`
 - **Environment reviewed:** Lovable/Supabase demo; not production
 - **Purpose:** Prerequisite review for `contract_cancel`
-- **Status:** FULL-PROJECT EVIDENCE REVIEW COMPLETE — BLOCKERS AND DECISIONS RECORDED
+- **Status:** FULL-PROJECT EVIDENCE REVIEW COMPLETE — F0 DECISIONS CONFIRMED
 - **Implementation:** NOT AUTHORIZED / NOT STARTED
 - **Out of scope:** `restructure`, runtime code, schema migration, UI, RPC, RLS, data changes, and deployment
 
@@ -107,7 +107,7 @@ Any failure rolls back all steps.
 - Overdue, active-debt, and collection queries filter collectible contract states.
 - Historical contract, disbursement, cash, approval, and collection records remain queryable.
 
-## 5. Decisions required before implementation planning
+## 5. Confirmed decisions for implementation planning
 
 | Decision | Recommended answer |
 |---|---|
@@ -120,7 +120,7 @@ Any failure rolls back all steps.
 | Report/collection behavior | Filter by collectible contract status and keep history |
 | Legacy data | Reconcile before enabling; uncertainty fails closed |
 
-No option above is approved merely because it is recommended here.
+The decision owner explicitly confirmed the five F0 principles on 2026-08-14. Exact coding details that were not part of those principles remain subject to the Interpretation Confirmation Gate.
 
 ## 6. Regression plan
 
@@ -165,7 +165,7 @@ F0 must later be split from workflow implementation into its own reversible, rev
 
 F0 Impact Review is recorded. The safest current direction is an immutable first-payment marker, preserved financial evidence, shared database locking, duplicate/replay protection, audit-before-delete, and defensive consumer filters.
 
-No runtime change has been made. Implementation planning must wait for explicit confirmation of the decisions in Section 5.
+No runtime change has been made. The confirmed decisions authorize preparation of `PHASE_B_CONTRACT_CANCEL_IMPLEMENTATION_PLAN.md` only; they do not authorize implementation.
 
 
 ## 9. Repository-wide evidence verification
@@ -295,4 +295,4 @@ A marker by itself is not enough unless direct inserts, legacy backfill, hard-de
 
 The F0 full-project Impact Review is now complete at the evidence level. It has identified current consumers, two existing business-rule conflicts, deletion/cascade risks, concurrency risks, and the required regression boundary.
 
-No code, schema, UI, RPC, RLS, database record, fixture, or deployment was changed. The next step is explicit confirmation of the F0 decisions before preparing a separate implementation plan.
+No code, schema, UI, RPC, RLS, database record, fixture, or deployment was changed. The implementation plan is now recorded separately; unresolved interpretation gates and a new explicit implementation authorization remain required.
