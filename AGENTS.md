@@ -178,3 +178,59 @@ This registry is the minimum known project dependency set. Add any dependency di
 | GitHub | https://www.githubstatus.com/ | Git operations, API and repository sync |
 | Lovable | https://status.lovable.dev/ | Editor, Cloud, MCP and API |
 | Supabase | https://status.supabase.com/ | Database, API Gateway, Auth, Edge Functions and Management API |
+
+# CRITICAL RULE — Explicit Authorization, Literal Read Scope, and Verified Capability
+
+> [!CAUTION]
+> This lesson-learned rule is mandatory for every human and AI contributor. It prevents unauthorized development, scope expansion, and premature claims that a task or repository is inaccessible.
+
+## 1. No workflow or node creation without explicit authorization
+
+Do not create, modify, run, activate, publish, import, or delete any workflow or node unless the authorized owner has explicitly approved that exact action and scope.
+
+Creating a workflow or node is development. It is not read-only preparation, exploration, inspection, or documentation work. A request to inspect, study, copy, or summarize repository documentation does not authorize workflow or node creation.
+
+If the available environment can perform the requested write only by creating or changing a workflow, stop and request explicit authorization before creating or changing it. Tool limitations do not broaden authority.
+
+## 2. Interpret instructions literally and confirm before expanding scope
+
+Follow the repository's Interpretation Confirmation Gate without exception.
+
+Unless the authorized owner explicitly says otherwise:
+
+- “read/study the .MD” means read the existing Markdown files only;
+- “copy the .MD” means retrieve/read the Markdown content for reference only;
+- neither phrase authorizes editing, committing, pushing, opening a pull request, creating automation, changing a workflow/node, or starting development;
+- “before development” includes every preparatory action that mutates an external system, repository, workflow, node, database, deployment, credential, or runtime state.
+
+When wording could support more than one meaning, state the possible interpretations and wait for confirmation. Do not choose the broader interpretation yourself.
+
+## 3. Verify actual access and environment capability before declaring failure
+
+Do not claim that a repository, file, credential, system, or task is inaccessible or impossible until reasonable read-only verification has been completed.
+
+The verification must include, as relevant:
+
+1. authenticated identity and connected account;
+2. repository/organization visibility and exact owner/name;
+3. branch and path existence, including case and renamed/archived repositories;
+4. installed connector, credential, permission, token scope, and available tool capability;
+5. direct read-only probe through the intended access path;
+6. observed HTTP/status/error evidence and whether the failure is authentication, authorization, path, provider incident, or unsupported capability.
+
+A first 404, 401, timeout, empty search result, missing UI control, or unfamiliar tool is not sufficient evidence that access is impossible. Report what was checked, the evidence found, and what remains unknown. Never expose secrets while verifying.
+
+## Fail-closed enforcement
+
+If explicit authorization, intended meaning, or verified capability is unclear:
+
+- perform only the minimum read-only inspection needed to explain the ambiguity;
+- do not create or modify workflows/nodes;
+- do not edit, commit, push, merge, deploy, or change data;
+- do not invent a workaround that mutates another system;
+- present the evidence and wait for the authorized owner's decision.
+
+## Standing lesson
+
+An AI was asked only to read repository Markdown but created exploratory workflows, interpreted “copy .MD” as permission to commit and develop, and initially reported repositories as unavailable after a superficial 404 despite an authorized GitHub credential being available. These were scope-control and verification failures. This rule exists to prevent recurrence.
+
