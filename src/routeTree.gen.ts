@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as ContractPrintContractIdRouteImport } from './routes/contract-print.$contractId'
 import { Route as AuthenticatedApplicationsIndexRouteImport } from './routes/_authenticated/applications/index'
 import { Route as AuthenticatedApprovalsIndexRouteImport } from './routes/_authenticated/approvals/index'
 import { Route as AuthenticatedAssistantIndexRouteImport } from './routes/_authenticated/assistant/index'
@@ -53,6 +54,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ContractPrintContractIdRoute = ContractPrintContractIdRouteImport.update({
+  id: '/contract-print/$contractId',
+  path: '/contract-print/$contractId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedApplicationsIndexRoute =
   AuthenticatedApplicationsIndexRouteImport.update({
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/contract-print/$contractId': typeof ContractPrintContractIdRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
@@ -209,6 +216,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/contract-print/$contractId': typeof ContractPrintContractIdRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
@@ -237,6 +245,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/contract-print/$contractId': typeof ContractPrintContractIdRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/_authenticated/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/contract-print/$contractId'
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/finance/expenses'
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/contract-print/$contractId'
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/finance/expenses'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/contract-print/$contractId'
     | '/_authenticated/contracts/$contractId'
     | '/_authenticated/customers/$customerId'
     | '/_authenticated/finance/expenses'
@@ -345,6 +357,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ContractPrintContractIdRoute: typeof ContractPrintContractIdRoute
   ApiPublicStatusSyncRoute: typeof ApiPublicStatusSyncRoute
   ApiPublicAuthLineCallbackRoute: typeof ApiPublicAuthLineCallbackRoute
   ApiPublicAuthLineStartRoute: typeof ApiPublicAuthLineStartRoute
@@ -379,6 +392,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/contract-print/$contractId': {
+      id: '/contract-print/$contractId'
+      path: '/contract-print/$contractId'
+      fullPath: '/contract-print/$contractId'
+      preLoaderRoute: typeof ContractPrintContractIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/applications/': {
       id: '/_authenticated/applications/'
@@ -581,6 +601,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ContractPrintContractIdRoute: ContractPrintContractIdRoute,
   ApiPublicStatusSyncRoute: ApiPublicStatusSyncRoute,
   ApiPublicAuthLineCallbackRoute: ApiPublicAuthLineCallbackRoute,
   ApiPublicAuthLineStartRoute: ApiPublicAuthLineStartRoute,
@@ -588,3 +609,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

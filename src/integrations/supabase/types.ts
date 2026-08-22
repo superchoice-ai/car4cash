@@ -397,6 +397,7 @@ export type Database = {
           end_date: string | null
           fee_amount: number
           first_due_date: string | null
+          first_payment_at: string | null
           id: string
           installment_amount: number
           interest_rate: number
@@ -420,6 +421,7 @@ export type Database = {
           end_date?: string | null
           fee_amount?: number
           first_due_date?: string | null
+          first_payment_at?: string | null
           id?: string
           installment_amount?: number
           interest_rate?: number
@@ -443,6 +445,7 @@ export type Database = {
           end_date?: string | null
           fee_amount?: number
           first_due_date?: string | null
+          first_payment_at?: string | null
           id?: string
           installment_amount?: number
           interest_rate?: number
@@ -496,12 +499,14 @@ export type Database = {
           created_at: string
           created_by: string | null
           district: string | null
+          document_no: string | null
           email: string | null
           emergency_name: string | null
           emergency_phone: string | null
           emergency_relation: string | null
           full_name: string
           id: string
+          line_id: string | null
           monthly_income: number | null
           national_id: string | null
           note: string | null
@@ -521,12 +526,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           district?: string | null
+          document_no?: string | null
           email?: string | null
           emergency_name?: string | null
           emergency_phone?: string | null
           emergency_relation?: string | null
           full_name: string
           id?: string
+          line_id?: string | null
           monthly_income?: number | null
           national_id?: string | null
           note?: string | null
@@ -546,12 +553,14 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           district?: string | null
+          document_no?: string | null
           email?: string | null
           emergency_name?: string | null
           emergency_phone?: string | null
           emergency_relation?: string | null
           full_name?: string
           id?: string
+          line_id?: string | null
           monthly_income?: number | null
           national_id?: string | null
           note?: string | null
@@ -1055,6 +1064,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string
+          document_no: string | null
           fee_amount: number
           id: string
           interest_rate: number
@@ -1076,6 +1086,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id: string
+          document_no?: string | null
           fee_amount?: number
           id?: string
           interest_rate?: number
@@ -1097,6 +1108,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string
+          document_no?: string | null
           fee_amount?: number
           id?: string
           interest_rate?: number
@@ -1129,6 +1141,67 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loan_guarantors: {
+        Row: {
+          application_id: string
+          branch_id: string
+          created_at: string
+          customer_id: string | null
+          full_name: string
+          id: string
+          line_id: string | null
+          national_id: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          branch_id: string
+          created_at?: string
+          customer_id?: string | null
+          full_name: string
+          id?: string
+          line_id?: string | null
+          national_id?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          branch_id?: string
+          created_at?: string
+          customer_id?: string | null
+          full_name?: string
+          id?: string
+          line_id?: string | null
+          national_id?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_guarantors_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "loan_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_guarantors_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loan_guarantors_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -1194,6 +1267,7 @@ export type Database = {
       }
       payments: {
         Row: {
+          allocation_snapshot: Json
           amount: number
           branch_id: string
           contract_id: string
@@ -1209,9 +1283,14 @@ export type Database = {
           receipt_no: string
           received_by: string | null
           reference: string | null
+          void_approval_id: string | null
+          void_reason: string | null
           voided: boolean
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
+          allocation_snapshot?: Json
           amount?: number
           branch_id: string
           contract_id: string
@@ -1227,9 +1306,14 @@ export type Database = {
           receipt_no: string
           received_by?: string | null
           reference?: string | null
+          void_approval_id?: string | null
+          void_reason?: string | null
           voided?: boolean
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
+          allocation_snapshot?: Json
           amount?: number
           branch_id?: string
           contract_id?: string
@@ -1245,7 +1329,11 @@ export type Database = {
           receipt_no?: string
           received_by?: string | null
           reference?: string | null
+          void_approval_id?: string | null
+          void_reason?: string | null
           voided?: boolean
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: [
           {
@@ -1267,6 +1355,20 @@ export type Database = {
             columns: ["installment_id"]
             isOneToOne: false
             referencedRelation: "installments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_void_approval_id_fkey"
+            columns: ["void_approval_id"]
+            isOneToOne: false
+            referencedRelation: "approval_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_voided_by_fkey"
+            columns: ["voided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1434,6 +1536,7 @@ export type Database = {
           note: string | null
           plate_no: string | null
           plate_province: string | null
+          registration_due_date: string | null
           updated_at: string
           vehicle_type: string
           year: number | null
@@ -1454,6 +1557,7 @@ export type Database = {
           note?: string | null
           plate_no?: string | null
           plate_province?: string | null
+          registration_due_date?: string | null
           updated_at?: string
           vehicle_type?: string
           year?: number | null
@@ -1474,6 +1578,7 @@ export type Database = {
           note?: string | null
           plate_no?: string | null
           plate_province?: string | null
+          registration_due_date?: string | null
           updated_at?: string
           vehicle_type?: string
           year?: number | null
@@ -1502,6 +1607,38 @@ export type Database = {
     Functions: {
       can_access_branch: { Args: { _branch: string }; Returns: boolean }
       delete_integration_secret: { Args: { _key: string }; Returns: boolean }
+      execute_approval_request: {
+        Args: {
+          _approval_id: string
+          _approve: boolean
+          _decision_note?: string
+        }
+        Returns: Json
+      }
+      execute_approval_request_phase_a_contract_cancel: {
+        Args: {
+          _approval_id: string
+          _approve: boolean
+          _decision_note?: string
+        }
+        Returns: Json
+      }
+      global_customer_history_search: {
+        Args: { _q: string }
+        Returns: {
+          branch_code: string
+          branch_name: string
+          event_date: string
+          full_name: string
+          history_type: string
+          line_id: string
+          national_id: string
+          person_id: string
+          phone: string
+          reference_no: string
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1527,6 +1664,8 @@ export type Database = {
         Args: { _branch: string; _doc_type: string }
         Returns: string
       }
+      perform_contract_cancel: { Args: { _approval_id: string }; Returns: Json }
+      perform_payment_void: { Args: { _approval_id: string }; Returns: Json }
       set_integration_secret: {
         Args: {
           _category: string
