@@ -94,3 +94,67 @@ If explicit authorization, intended meaning, or verified capability is unclear: 
 
 > [!CAUTION]
 > When normal development is blocked by an external provider, first check official documentation and status, run a safe read-only probe, identify the failure class, and only then propose Cloud Browser as a temporary continuity option with explicit authorization. Cloud Browser never bypasses authorization, approval, audit, repository, or data-integrity controls.
+
+
+<!-- TEST DATA ISOLATION AND CONTROLLED CLEANUP — BEGIN -->
+# CRITICAL RULE — Test Data Isolation, Traceability, Retention, and Controlled Cleanup
+
+> [!CAUTION]
+> This rule is mandatory for every manual or automated test in every environment. Existing data must be treated as protected data even when it appears to be old, mock, inactive, duplicated, or convenient for testing.
+
+## Create-only test-data rule
+
+- Tests MUST create new synthetic data. Never edit, reuse, approve, reject, cancel, convert, attach children to, or delete any pre-existing record for test purposes.
+- If a test requires “old,” historical, legacy, approved, rejected, cancelled, contracted, paid, or otherwise progressed data, create a new synthetic root and progress that synthetic data through the required states. Do not repurpose existing data.
+- Test data must use a unique, documented run identifier or prefix that cannot be confused with business data.
+
+## Mandatory creation manifest and lineage
+
+Before creating test data, record:
+
+- test run ID/prefix, purpose, owner, environment, branch, and creation time;
+- every root record created;
+- every child, downstream, approval, audit, document, payment, accounting, notification, counter, and workflow record that may be created as a consequence;
+- the exact creation order, relationships, table/entity IDs, and expected cleanup order;
+- whether any sequence/counter is intentionally retained to preserve monotonic numbering.
+
+The tester MUST learn and document the full creation path while testing so the cleanup scope is derived from known lineage, not guessed later from broad dates, branches, names, or table scans.
+
+## Retention and deletion approval
+
+- Do NOT delete, reset, anonymize, or clean up test data while testing is active.
+- Retain all created test data until the complete test scope has finished and the authorized owner explicitly approves deletion.
+- Test completion alone is not deletion authorization. Approval must identify the test run or exact data scope to remove.
+
+## Controlled cleanup
+
+After explicit approval:
+
+1. Resolve the exact cleanup set from the creation manifest and stable IDs.
+2. Preserve all pre-existing/shared data, including records temporarily referenced during the test.
+3. Delete child/downstream records before roots, preferably in one atomic transaction.
+4. Do not use a broad date, branch, status, partial-name, or environment-wide delete condition when stable IDs or an exact test prefix are available.
+5. Do not roll counters backward when that could reuse an issued number; document intentional sequence gaps instead.
+6. Verify zero remaining test-prefix records, zero target IDs, zero broken references/orphans, unchanged protected data, and valid constraints/indexes.
+7. Report exact per-table deletion counts, retained operational state, verification evidence, and anything still UNKNOWN.
+
+If ownership or lineage cannot be proven, STOP and request clarification. Never “clean up what looks like test data.”
+<!-- TEST DATA ISOLATION AND CONTROLLED CLEANUP — END -->
+
+<!-- LOVABLE PROD/DEV BRANCH SEPARATION — BEGIN -->
+# CRITICAL RULE — Lovable Production and Development Branch Separation
+
+> [!CAUTION]
+> This rule applies whenever Lovable is the primary web application/editor or the repository is connected to Lovable.
+
+- GitHub branch `main` is the only branch authorized as the source for Lovable production publishing.
+- Production is the published Lovable URL, normally `https://<project>.lovable.app`.
+- Do NOT develop, experiment, generate code, or commit feature/fix work directly on `main`. All development MUST occur on a separate non-main development branch.
+- Lovable Project Preview UI is the Dev/QA environment and uses an ephemeral preview URL such as `https://[project-id]-preview.lovable.app`.
+- Before any test, sync, publish, or release decision, verify the exact GitHub branch connected to Lovable. Lovable UI labels such as “Main” or “Draft” describe Lovable UI/design state and MUST NOT be interpreted as GitHub branch names.
+- Preview/non-main code must never be published as production. Publish only after the approved development branch is reviewed, validated, merged into `main`, branch synchronization is confirmed, and the authorized owner explicitly approves production publishing.
+- A production hotfix must still be developed on a non-main branch and merged through the approved review path. Do not bypass branch separation because a change is urgent or small.
+- If Lovable cannot prove the connected branch or environment, STOP with `NO-GO`; do not develop on `main` and do not publish.
+
+This separation is mandatory because Lovable uses the production published URL and project preview URL as the practical PROD/Dev boundary.
+<!-- LOVABLE PROD/DEV BRANCH SEPARATION — END -->
