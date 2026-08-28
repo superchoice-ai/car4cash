@@ -92,3 +92,15 @@ The product objective is to help ordinary web applications achieve strong, repea
 ## 9. Ownership
 
 Repository maintainers own remediation. System owners authorize scope. Security test operators preserve evidence and cleanup. No AI agent, automation, employee, or contractor may widen the approved target or perform a destructive test without explicit authorization.
+
+
+<!-- TEST DATA LIFECYCLE ENFORCEMENT — BEGIN -->
+## Mandatory test-data lifecycle enforcement
+
+- Create new synthetic test data only; never modify or reuse pre-existing data for testing.
+- Simulate required historical/legacy states by creating new synthetic roots and progressing only those roots through the workflow.
+- Assign every test run a unique prefix/run ID and maintain a creation manifest containing all root IDs, downstream IDs, relationships, approvals, contracts, payments, accounting entries, documents, notifications, audit records, and affected counters.
+- Retain test data until the complete test scope is finished and the authorized owner explicitly approves deletion of that exact run.
+- Cleanup must be derived from the manifest, preserve pre-existing/shared records, run child-first and atomically where possible, and verify zero test residue plus zero orphaned records afterward.
+- If test-data ownership or lineage is uncertain, do not delete anything; stop and request clarification.
+<!-- TEST DATA LIFECYCLE ENFORCEMENT — END -->
