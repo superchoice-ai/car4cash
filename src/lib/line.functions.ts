@@ -71,7 +71,7 @@ export const saveLineRecipients = createServerFn({ method: "POST" })
     if (readError) throw readError;
 
     const currentValue = (current?.value ?? {}) as Record<string, unknown>;
-    delete currentValue.to;
+    delete currentValue['to'];
     const value = {
       ...currentValue,
       enabled: data.enabled ?? true,

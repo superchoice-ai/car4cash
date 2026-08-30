@@ -115,7 +115,7 @@ function ApprovalsPage() {
 
   const approvalDetails = (a: any) => {
     const payload = (a.payload ?? {}) as Record<string, any>;
-    const changes = (payload.changes ?? {}) as Record<string, unknown>;
+    const changes = (payload['changes'] ?? {}) as Record<string, unknown>;
     const app = a.entity_table === "loan_applications" && a.entity_id ? applicationMap.get(a.entity_id) : undefined;
     const requester = a.requested_by ? (profileNames.get(a.requested_by) ?? a.requested_by) : "—";
     const customer = app?.customers as any;
@@ -133,7 +133,7 @@ function ApprovalsPage() {
           <span className="text-muted-foreground">สาขา</span><span>{a.branches?.name ?? "—"}</span>
           <span className="text-muted-foreground">เวลาขอ</span><span>{formatThaiDateTime(a.created_at)}</span>
           <span className="text-muted-foreground">เหตุผล</span><span>{a.reason ?? "—"}</span>
-          {payload.operation && <><span className="text-muted-foreground">การดำเนินการ</span><span>{formatPayloadValue(payload.operation)}</span></>}
+          {payload['operation'] && <><span className="text-muted-foreground">การดำเนินการ</span><span>{formatPayloadValue(payload['operation'])}</span></>}
         </div>
 
         {app && (
