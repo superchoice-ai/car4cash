@@ -97,3 +97,19 @@ Remix จะคัดลอกโค้ดแต่ **trigger ในสคีม
 - ค่าเชื่อมต่อ: ผูก secrets กลับไปยัง project ref เดิม + แก้ `supabase/config.toml` แล้วรีสตาร์ท dev server
 - Schema: migration ที่รันในรอบนี้เป็นการ "สร้าง trigger + backfill" หากต้องย้อน ให้ลบ trigger ที่สร้างและคง profile ที่ backfill ไว้ (ไม่ลบข้อมูลผู้ใช้)
 - ไม่มีการแก้ข้อมูลธุรกิจเดิมในรอบตรวจสอบนี้ จึงไม่ต้อง rollback ข้อมูล
+
+---
+
+## 5. การแก้ security linter (2026-08-31 14:40 UTC / 21:40 Asia/Bangkok)
+
+| รายการ | ก่อนแก้ | หลังแก้ | หมายเหตุ |
+| --- | --- | --- | --- |
+| ฟังก์ชัน SECURITY DEFINER ที่ role `anon` เรียกได้ | 19 | 0 | REVOKE ALL จาก PUBLIC/anon ทุกฟังก์ชันใน `public` |
+| ฟังก์ชัน SECURITY DEFINER ที่ผู้ล็อกอินเรียกได้ | 19 | 11 | เหลือเฉพาะที่จำเป็น (RLS helper: `has_role`, `can_access_branch`, `is_hq`, `my_branch`, `is_manager` + RPC ที่หน้าจอใช้: `next_doc_no`, `global_customer_history_search`, `execute_approval_request`, `list/set/delete_integration_secret`) |
+| ฟังก์ชัน trigger / executor ภายใน | เรียกตรงได้ | เรียกตรงไม่ได้ | `guard_*`, `handle_new_user`, `mark_contract_payment_event`, `prevent_payment_physical_delete`, `set_updated_at`, `mask_secret`, `perform_contract_cancel`, `perform_payment_void`, `execute_approval_request_phase_a_contract_cancel` |
+| Anonymous Access Policies (25) | แจ้งเตือน | คงเดิม (ไม่พบความเสี่ยงจริง) | ทุก policy ใน `public` เป็น `TO authenticated` ทั้ง 75 รายการ และ role `anon` ไม่มี GRANT บนตารางใดเลย จึงเข้าถึงข้อมูลไม่ได้ |
+| RLS enabled no policy (1) | INFO | คงเดิมตามการออกแบบ | `integration_secrets` ล็อกไว้ อ่าน/เขียนผ่าน security-definer function เท่านั้น |
+
+Validation หลังแก้: linter 64 → 37 รายการ, build OK, ฟังก์ชันที่แอปเรียกใช้ทั้งหมดยังคง GRANT ให้ `authenticated`, `service_role` ยังเรียกได้ครบทุกฟังก์ชัน
+
+Rollback: `GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;`
