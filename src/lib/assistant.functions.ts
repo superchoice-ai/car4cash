@@ -72,26 +72,68 @@ export const askAssistant = createServerFn({ method: "POST" })
     // ผู้ใช้สาขาถูกบังคับให้อยู่ในสาขาตนเองเสมอ ไม่ให้ระบุสาขาอื่นผ่านคำถาม
     const scopeBranchId = isHQ ? data.branchId : (homeBranch?.id ?? null);
 
-    const scoped = <T extends { eq: (c: string, v: string) => T }>(q: T): T =>
-      scopeBranchId ? q.eq("branch_id", scopeBranchId) : q;
-
-    const countOf = async (
-      table: "customers" | "contracts" | "loan_applications" | "approval_requests" | "collection_activities",
-      apply?: (q: ReturnType<typeof buildCount>) => ReturnType<typeof buildCount>,
-    ) => {
-      function buildCount() {
-        return supabase.from(table).select("id", { count: "exact", head: true });
-      }
-      let q = scoped(buildCount() as unknown as { eq: (c: string, v: string) => never }) as unknown as ReturnType<
-        typeof buildCount
-      >;
-      if (apply) q = apply(q);
-      const { count } = await q;
-      return count ?? 0;
-    };
-
     const today = new Date().toISOString().slice(0, 10);
     const monthStart = `${today.slice(0, 7)}-01`;
+    const br = scopeBranchId;
+
+    const countContracts = async (status: string) => {
+      let q = supabase.from("contracts").select("id", { count: "exact", head: true }).eq("status", status);
+      if (br) q = q.eq("branch_id", br);
+      return (await q).count ?? 0;
+    };
+
+    const countCustomers = async () => {
+      let q = supabase.from("customers").select("id", { count: "exact", head: true });
+      if (br) q = q.eq("branch_id", br);
+      return (await q).count ?? 0;
+    };
+
+    const countPendingApprovals = async () => {
+      let q = supabase.from("approval_requests").select("id", { count: "exact", head: true }).eq("status", "pending");
+      if (br) q = q.eq("branch_id", br);
+      return (await q).count ?? 0;
+    };
+
+    const countCollections = async () => {
+      let q = supabase
+        .from("collection_activities")
+        .select("id", { count: "exact", head: true })
+        .gte("acted_at", monthStart);
+      if (br) q = q.eq("branch_id", br);
+      return (await q).count ?? 0;
+    };
+
+    const fetchContracts = async () => {
+      let q = supabase.from("contracts").select("outstanding, status");
+      if (br) q = q.eq("branch_id", br);
+      return (await q).data ?? [];
+    };
+
+    const fetchOverdueInstallments = async () => {
+      let q = supabase
+        .from("installments")
+        .select("total_amount, paid_amount")
+        .lt("due_date", today)
+        .neq("status", "paid");
+      if (br) q = q.eq("branch_id", br);
+      return (await q).data ?? [];
+    };
+
+    const fetchPayments = async () => {
+      let q = supabase.from("payments").select("amount").gte("paid_at", monthStart).eq("voided", false);
+      if (br) q = q.eq("branch_id", br);
+      return (await q).data ?? [];
+    };
+
+    const fetchCash = async () => {
+      let q = supabase
+        .from("cash_entries")
+        .select("direction, total_amount")
+        .gte("entry_date", monthStart)
+        .eq("voided", false);
+      if (br) q = q.eq("branch_id", br);
+      return (await q).data ?? [];
+    };
 
     const [
       branchList,
@@ -100,40 +142,25 @@ export const askAssistant = createServerFn({ method: "POST" })
       overdueContracts,
       closedContracts,
       pendingApprovals,
-      outstandingRows,
-      overdueInstallments,
-      paymentsThisMonth,
-      cashThisMonth,
+      contractRows,
+      overdueList,
+      paymentRows,
+      cashRows,
       recentCollections,
     ] = await Promise.all([
-      supabase.from("branches").select("id, code, name, is_hq").eq("active", true).order("code"),
-      countOf("customers"),
-      countOf("contracts", (q) => q.eq("status", "active")),
-      countOf("contracts", (q) => q.eq("status", "overdue")),
-      countOf("contracts", (q) => q.eq("status", "closed")),
-      countOf("approval_requests", (q) => q.eq("status", "pending")),
-      scoped(supabase.from("contracts").select("outstanding, principal, status") as never) as unknown as Promise<{
-        data: { outstanding: number; principal: number; status: string }[] | null;
-      }>,
-      scoped(
-        supabase
-          .from("installments")
-          .select("total_amount, paid_amount, due_date")
-          .lt("due_date", today)
-          .neq("status", "paid") as never,
-      ) as unknown as Promise<{ data: { total_amount: number; paid_amount: number; due_date: string }[] | null }>,
-      scoped(
-        supabase.from("payments").select("amount, paid_at, voided").gte("paid_at", monthStart).eq("voided", false) as never,
-      ) as unknown as Promise<{ data: { amount: number }[] | null }>,
-      scoped(
-        supabase
-          .from("cash_entries")
-          .select("direction, total_amount, entry_date, voided")
-          .gte("entry_date", monthStart)
-          .eq("voided", false) as never,
-      ) as unknown as Promise<{ data: { direction: string; total_amount: number }[] | null }>,
-      countOf("collection_activities", (q) => q.gte("acted_at", monthStart)),
+      supabase.from("branches").select("id, name").eq("active", true).order("code"),
+      countCustomers(),
+      countContracts("active"),
+      countContracts("overdue"),
+      countContracts("closed"),
+      countPendingApprovals(),
+      fetchContracts(),
+      fetchOverdueInstallments(),
+      fetchPayments(),
+      fetchCash(),
+      countCollections(),
     ]);
+
 
     const baht = (satang: number) => Math.round(satang / 100).toLocaleString("th-TH");
     const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
