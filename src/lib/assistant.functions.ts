@@ -165,13 +165,12 @@ export const askAssistant = createServerFn({ method: "POST" })
     const baht = (satang: number) => Math.round(satang / 100).toLocaleString("th-TH");
     const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
 
-    const contracts = outstandingRows.data ?? [];
-    const outstandingTotal = sum(contracts.filter((c) => c.status !== "closed").map((c) => c.outstanding ?? 0));
-    const overdueList = overdueInstallments.data ?? [];
+    const outstandingTotal = sum(contractRows.filter((c) => c.status !== "closed").map((c) => c.outstanding ?? 0));
     const overdueAmount = sum(overdueList.map((i) => Math.max((i.total_amount ?? 0) - (i.paid_amount ?? 0), 0)));
-    const income = sum((cashThisMonth.data ?? []).filter((c) => c.direction === "income").map((c) => c.total_amount ?? 0));
-    const expense = sum((cashThisMonth.data ?? []).filter((c) => c.direction === "expense").map((c) => c.total_amount ?? 0));
-    const paidThisMonth = sum((paymentsThisMonth.data ?? []).map((p) => p.amount ?? 0));
+    const income = sum(cashRows.filter((c) => c.direction === "income").map((c) => c.total_amount ?? 0));
+    const expense = sum(cashRows.filter((c) => c.direction === "expense").map((c) => c.total_amount ?? 0));
+    const paidThisMonth = sum(paymentRows.map((p) => p.amount ?? 0));
+
 
     const scopeName = scopeBranchId
       ? ((branchList.data ?? []).find((b) => b.id === scopeBranchId)?.name ?? "สาขาที่เลือก")
