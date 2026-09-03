@@ -16,6 +16,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ContractPrintContractIdRouteImport } from './routes/contract-print.$contractId'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as AuthenticatedApplicationsIndexRouteImport } from './routes/_authenticated/applications/index'
 import { Route as AuthenticatedApprovalsIndexRouteImport } from './routes/_authenticated/approvals/index'
 import { Route as AuthenticatedAssistantIndexRouteImport } from './routes/_authenticated/assistant/index'
@@ -71,6 +72,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const ContractPrintContractIdRoute = ContractPrintContractIdRouteImport.update({
   id: '/contract-print/$contractId',
   path: '/contract-print/$contractId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedApplicationsIndexRoute =
@@ -205,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/contract-print/$contractId': typeof ContractPrintContractIdRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
@@ -234,6 +241,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/contract-print/$contractId': typeof ContractPrintContractIdRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
@@ -265,6 +273,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/contract-print/$contractId': typeof ContractPrintContractIdRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/_authenticated/contracts/$contractId': typeof AuthenticatedContractsContractIdRoute
   '/_authenticated/customers/$customerId': typeof AuthenticatedCustomersCustomerIdRoute
   '/_authenticated/finance/expenses': typeof AuthenticatedFinanceExpensesRoute
@@ -296,6 +305,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/contract-print/$contractId'
+    | '/.lovable/oauth/consent'
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/finance/expenses'
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/contract-print/$contractId'
+    | '/.lovable/oauth/consent'
     | '/contracts/$contractId'
     | '/customers/$customerId'
     | '/finance/expenses'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authenticated/dashboard'
     | '/contract-print/$contractId'
+    | '/.lovable/oauth/consent'
     | '/_authenticated/contracts/$contractId'
     | '/_authenticated/customers/$customerId'
     | '/_authenticated/finance/expenses'
@@ -385,6 +397,7 @@ export interface RootRouteChildren {
   McpRoute: typeof McpRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ContractPrintContractIdRoute: typeof ContractPrintContractIdRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicStatusSyncRoute: typeof ApiPublicStatusSyncRoute
   ApiPublicAuthLineCallbackRoute: typeof ApiPublicAuthLineCallbackRoute
   ApiPublicAuthLineStartRoute: typeof ApiPublicAuthLineStartRoute
@@ -439,6 +452,13 @@ declare module '@tanstack/react-router' {
       path: '/contract-print/$contractId'
       fullPath: '/contract-print/$contractId'
       preLoaderRoute: typeof ContractPrintContractIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/applications/': {
@@ -646,6 +666,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ContractPrintContractIdRoute: ContractPrintContractIdRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicStatusSyncRoute: ApiPublicStatusSyncRoute,
   ApiPublicAuthLineCallbackRoute: ApiPublicAuthLineCallbackRoute,
   ApiPublicAuthLineStartRoute: ApiPublicAuthLineStartRoute,
