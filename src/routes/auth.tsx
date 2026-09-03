@@ -20,14 +20,26 @@ export const Route = createFileRoute("/auth")({
       { property: "og:description", content: "ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด สำหรับพนักงานและผู้บริหาร" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s["next"] === "string" ? s["next"] : undefined,
+  }),
   component: AuthPage,
 });
 
 const emailSchema = z.string().trim().email({ message: "รูปแบบอีเมลไม่ถูกต้อง" }).max(255);
 const passwordSchema = z.string().min(8, { message: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร" }).max(72);
 
+const NEXT_KEY = "tharnsaph.auth-next";
+
+/** Accept only same-origin relative paths (e.g. the OAuth consent URL). */
+function safeNext(value: string | null | undefined): string | null {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return null;
+  return value;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
+  const { next: nextParam } = Route.useSearch();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,14 +48,29 @@ function AuthPage() {
   useEffect(() => {
     const err = new URLSearchParams(window.location.search).get("line_error");
     if (err) toast.error(err);
+
+    // Preserve the post-login target across Google/LINE/email round-trips.
+    const fromParam = safeNext(nextParam);
+    if (fromParam) sessionStorage.setItem(NEXT_KEY, fromParam);
+
+    const goAfterLogin = () => {
+      const target = safeNext(sessionStorage.getItem(NEXT_KEY));
+      if (target) {
+        sessionStorage.removeItem(NEXT_KEY);
+        window.location.replace(target);
+        return;
+      }
+      void navigate({ to: "/dashboard", replace: true });
+    };
+
     void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) void navigate({ to: "/dashboard", replace: true });
+      if (data.session) goAfterLogin();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) void navigate({ to: "/dashboard", replace: true });
+      if (session) goAfterLogin();
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, nextParam]);
 
 
   const validate = () => {
