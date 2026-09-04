@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export interface AssistantMessage {
@@ -13,6 +14,7 @@ interface AskInput {
 }
 
 const MAX_TURNS = 12;
+const MAX_TOOL_ROUNDS = 6;
 const MODEL = "google/gemini-3.7-flash";
 
 const HELP_DOC = `
@@ -38,7 +40,22 @@ const HELP_DOC = `
 - จำนวนเงินในระบบเก็บเป็นสตางค์ แต่แสดงผลเป็นบาททุกครั้ง
 `.trim();
 
-/** ผู้ช่วย AI: ตอบคำถามวิธีใช้งาน และวิเคราะห์ข้อมูลแบบอ่านอย่างเดียวตามสิทธิ์ผู้ใช้ */
+type ChatMessage =
+  | { role: "system" | "user"; content: string }
+  | { role: "assistant"; content: string | null; tool_calls?: ToolCall[] }
+  | { role: "tool"; tool_call_id: string; content: string };
+
+interface ToolCall {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+}
+
+interface GatewayResponse {
+  choices?: { message?: { content?: string | null; tool_calls?: ToolCall[] } }[];
+}
+
+/** ผู้ช่วย AI: ตอบคำถามวิธีใช้งาน และเรียกใช้เครื่องมืออ่านข้อมูลชุดเดียวกับ MCP ตามสิทธิ์ผู้ใช้ */
 export const askAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: AskInput) => {
@@ -50,10 +67,17 @@ export const askAssistant = createServerFn({ method: "POST" })
     return { messages, branchId: input?.branchId ?? null };
   })
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase, userId, claims } = context;
 
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) throw new Error("ยังไม่ได้เปิดใช้งาน AI สำหรับโปรเจกต์นี้");
+
+    // Server-only modules: loaded inside the handler so they never reach the client bundle.
+    const [{ READ_ONLY_TOOLS }, { ToolContext }, { z }] = await Promise.all([
+      import("@/lib/mcp/registry"),
+      import("@lovable.dev/mcp-js"),
+      import("zod"),
+    ]);
 
     // ---- ตัวตนและสิทธิ์ (อ่านผ่าน RLS ในฐานะผู้ใช้คนนั้นเท่านั้น) ----
     const [{ data: profile }, { data: roleRows }] = await Promise.all([
@@ -64,175 +88,144 @@ export const askAssistant = createServerFn({ method: "POST" })
         .maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", userId),
     ]);
-
     const roles = (roleRows ?? []).map((r) => r.role as string);
-    const homeBranch = (profile as unknown as { branches?: { id: string; code: string; name: string; is_hq: boolean } | null })
-      ?.branches ?? null;
+    const homeBranch =
+      (profile as unknown as { branches?: { id: string; code: string; name: string; is_hq: boolean } | null })?.branches ??
+      null;
     const isHQ = roles.includes("admin") || !!homeBranch?.is_hq;
-    // ผู้ใช้สาขาถูกบังคับให้อยู่ในสาขาตนเองเสมอ ไม่ให้ระบุสาขาอื่นผ่านคำถาม
+    // ผู้ใช้สาขาถูกบังคับให้อยู่ในสาขาตนเองเสมอ (RLS บังคับอยู่แล้ว ชั้นนี้กันการถามข้ามสาขาซ้ำอีกชั้น)
     const scopeBranchId = isHQ ? data.branchId : (homeBranch?.id ?? null);
 
-    const today = new Date().toISOString().slice(0, 10);
-    const monthStart = `${today.slice(0, 7)}-01`;
-    const br = scopeBranchId;
+    // ---- สร้าง ToolContext จาก bearer token ของผู้ใช้ (ตัวเดียวกับที่ middleware ตรวจแล้ว) ----
+    const authHeader = getRequest().headers.get("authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (!token) throw new Error("Unauthorized");
+    const supabaseUrl = process.env["SUPABASE_URL"] ?? "";
+    const ctx = new ToolContext({
+      type: "oauth",
+      principal: {
+        claims,
+        issuer: `${supabaseUrl}/auth/v1`,
+        resource: "in-app-assistant",
+        acceptedAudiences: ["authenticated"],
+        scopes: [],
+        sub: userId,
+        email: typeof claims["email"] === "string" ? (claims["email"] as string) : undefined,
+        clientId: "in-app-assistant",
+      },
+      bearer: { token },
+    });
 
-    const countContracts = async (status: string) => {
-      let q = supabase.from("contracts").select("id", { count: "exact", head: true }).eq("status", status);
-      if (br) q = q.eq("branch_id", br);
-      return (await q).count ?? 0;
+    // ---- แปลง tool definitions เป็น OpenAI-style function schema ----
+    const toolByName = new Map(READ_ONLY_TOOLS.map((t) => [t.name, t]));
+    const toolDefs = READ_ONLY_TOOLS.map((t) => ({
+      type: "function" as const,
+      function: {
+        name: t.name,
+        description: t.description,
+        parameters: z.toJSONSchema(z.object(t.inputSchema ?? {}), { io: "input" }),
+      },
+    }));
+
+    const runTool = async (call: ToolCall): Promise<string> => {
+      const tool = toolByName.get(call.function.name);
+      if (!tool) return JSON.stringify({ error: `unknown tool ${call.function.name}` });
+      let args: Record<string, unknown> = {};
+      try {
+        args = call.function.arguments ? (JSON.parse(call.function.arguments) as Record<string, unknown>) : {};
+      } catch {
+        return JSON.stringify({ error: "invalid JSON arguments" });
+      }
+      // บังคับขอบเขตสาขา: ผู้ใช้สาขาใช้ได้เฉพาะสาขาตนเอง / ผู้ใช้ HQ ใช้สาขาที่เลือกอยู่เมื่อไม่ได้ระบุ
+      if (tool.inputSchema && "branch_id" in tool.inputSchema) {
+        if (!isHQ && homeBranch?.id) args["branch_id"] = homeBranch.id;
+        else if (isHQ && scopeBranchId && !args["branch_id"]) args["branch_id"] = scopeBranchId;
+      }
+      const parsed = z.object(tool.inputSchema ?? {}).safeParse(args);
+      if (!parsed.success) return JSON.stringify({ error: "invalid arguments", issues: parsed.error.issues });
+      try {
+        const result = await tool.handler(parsed.data, ctx);
+        const text = result.content
+          .map((c) => (c.type === "text" ? c.text : `[${c.type}]`))
+          .join("\n");
+        return (result.isError ? `ERROR: ${text}` : text).slice(0, 60_000);
+      } catch (e) {
+        return JSON.stringify({ error: e instanceof Error ? e.message : String(e) });
+      }
     };
-
-    const countCustomers = async () => {
-      let q = supabase.from("customers").select("id", { count: "exact", head: true });
-      if (br) q = q.eq("branch_id", br);
-      return (await q).count ?? 0;
-    };
-
-    const countPendingApprovals = async () => {
-      let q = supabase.from("approval_requests").select("id", { count: "exact", head: true }).eq("status", "pending");
-      if (br) q = q.eq("branch_id", br);
-      return (await q).count ?? 0;
-    };
-
-    const countCollections = async () => {
-      let q = supabase
-        .from("collection_activities")
-        .select("id", { count: "exact", head: true })
-        .gte("acted_at", monthStart);
-      if (br) q = q.eq("branch_id", br);
-      return (await q).count ?? 0;
-    };
-
-    const fetchContracts = async () => {
-      let q = supabase.from("contracts").select("outstanding, status");
-      if (br) q = q.eq("branch_id", br);
-      return (await q).data ?? [];
-    };
-
-    const fetchOverdueInstallments = async () => {
-      let q = supabase
-        .from("installments")
-        .select("total_amount, paid_amount")
-        .lt("due_date", today)
-        .neq("status", "paid");
-      if (br) q = q.eq("branch_id", br);
-      return (await q).data ?? [];
-    };
-
-    const fetchPayments = async () => {
-      let q = supabase.from("payments").select("amount").gte("paid_at", monthStart).eq("voided", false);
-      if (br) q = q.eq("branch_id", br);
-      return (await q).data ?? [];
-    };
-
-    const fetchCash = async () => {
-      let q = supabase
-        .from("cash_entries")
-        .select("direction, total_amount")
-        .gte("entry_date", monthStart)
-        .eq("voided", false);
-      if (br) q = q.eq("branch_id", br);
-      return (await q).data ?? [];
-    };
-
-    const [
-      branchList,
-      customerCount,
-      activeContracts,
-      overdueContracts,
-      closedContracts,
-      pendingApprovals,
-      contractRows,
-      overdueList,
-      paymentRows,
-      cashRows,
-      recentCollections,
-    ] = await Promise.all([
-      supabase.from("branches").select("id, name").eq("active", true).order("code"),
-      countCustomers(),
-      countContracts("active"),
-      countContracts("overdue"),
-      countContracts("closed"),
-      countPendingApprovals(),
-      fetchContracts(),
-      fetchOverdueInstallments(),
-      fetchPayments(),
-      fetchCash(),
-      countCollections(),
-    ]);
-
-
-    const baht = (satang: number) => Math.round(satang / 100).toLocaleString("th-TH");
-    const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
-
-    const outstandingTotal = sum(contractRows.filter((c) => c.status !== "closed").map((c) => c.outstanding ?? 0));
-    const overdueAmount = sum(overdueList.map((i) => Math.max((i.total_amount ?? 0) - (i.paid_amount ?? 0), 0)));
-    const income = sum(cashRows.filter((c) => c.direction === "income").map((c) => c.total_amount ?? 0));
-    const expense = sum(cashRows.filter((c) => c.direction === "expense").map((c) => c.total_amount ?? 0));
-    const paidThisMonth = sum(paymentRows.map((p) => p.amount ?? 0));
-
 
     const scopeName = scopeBranchId
-      ? ((branchList.data ?? []).find((b) => b.id === scopeBranchId)?.name ?? "สาขาที่เลือก")
+      ? ((await supabase.from("branches").select("name").eq("id", scopeBranchId).maybeSingle()).data?.name ??
+        "สาขาที่เลือก")
       : isHQ
         ? "ทุกสาขา (รวมทั้งบริษัท)"
         : (homeBranch?.name ?? "-");
+    const today = new Date().toISOString().slice(0, 10);
 
-    const snapshot = `
-ผู้ใช้: ${profile?.full_name || profile?.email || "-"}
-สิทธิ์: ${roles.join(", ") || "ไม่ระบุ"}${isHQ ? " (ระดับสำนักงานใหญ่ เห็นได้ทุกสาขา)" : " (เห็นเฉพาะสาขาตนเอง)"}
-สาขาต้นสังกัด: ${homeBranch?.name ?? "-"}
-ขอบเขตข้อมูลที่กำลังดู: ${scopeName}
-วันที่วันนี้: ${today}
-
-ตัวเลขสรุป (นับเฉพาะข้อมูลที่ผู้ใช้มีสิทธิ์เห็น)
-- ลูกค้าทั้งหมด: ${customerCount.toLocaleString("th-TH")} ราย
-- สัญญา: ปกติ ${activeContracts} / ค้างชำระ ${overdueContracts} / ปิดบัญชี ${closedContracts}
-- ยอดลูกหนี้คงค้าง (สัญญาที่ยังไม่ปิด): ${baht(outstandingTotal)} บาท
-- งวดที่เกินกำหนดยังไม่ชำระครบ: ${overdueList.length} งวด รวมค้าง ${baht(overdueAmount)} บาท
-- รับชำระเดือนนี้ (ตั้งแต่ ${monthStart}): ${baht(paidThisMonth)} บาท
-- สมุดเงินสดเดือนนี้: รายรับ ${baht(income)} บาท / รายจ่าย ${baht(expense)} บาท / คงเหลือสุทธิ ${baht(income - expense)} บาท
-- งานติดตามหนี้เดือนนี้: ${recentCollections} รายการ
-- คำขออนุมัติที่รออยู่: ${pendingApprovals} รายการ
-`.trim();
-
-    const system = `คุณคือ "ผู้ช่วย AI ธารทรัพย์" ผู้ช่วยภายในของระบบสินเชื่อรถแลกเงิน ตอบเป็นภาษาไทยสุภาพ กระชับ ตรงประเด็น ใช้ bullet เมื่อเหมาะสม
+    const system = `คุณคือ "ผู้ช่วย AI ธารทรัพย์" ผู้ช่วยภายในของระบบสินเชื่อรถแลกเงิน ตอบเป็นภาษาไทยสุภาพ กระชับ ตรงประเด็น ใช้ bullet/ตารางเมื่อเหมาะสม
 
 หน้าที่:
 1) อธิบายวิธีใช้งานระบบ ฟังก์ชันแต่ละเมนู และขั้นตอนงาน ตามสิทธิ์ของผู้ใช้คนที่ถาม
-2) วิเคราะห์/สรุปข้อมูลจากตัวเลขสรุปที่ให้มาเท่านั้น
+2) ตอบคำถามเชิงข้อมูล/วิเคราะห์โดย "เรียกใช้เครื่องมือ" (tools) ที่ให้ไว้เสมอ ห้ามเดาตัวเลข — เครื่องมือทุกตัวอ่านข้อมูลผ่านสิทธิ์ของผู้ใช้คนนี้ (RLS) จึงเห็นได้เท่าที่เขามีสิทธิ์
+   - ภาพรวม: portfolio_summary / รายสาขา: list_branches
+   - ลูกค้า: search_customers / สัญญา: list_contracts, get_contract
+   - ค้างชำระ: list_overdue_installments / ใบเสร็จ: list_payments / สมุดเงินสด: list_cash_entries / คำขออนุมัติ: list_pending_approvals
+   - จำนวนเงินจากเครื่องมือเป็น "บาท" แล้ว แสดงผลด้วยเครื่องหมายคั่นหลักพัน
 
 ข้อจำกัดเด็ดขาด:
 - คุณเป็นผู้ช่วยแบบอ่านข้อมูลเท่านั้น ไม่สามารถสร้าง แก้ไข ลบ อนุมัติ หรือเปลี่ยนแปลงข้อมูลใด ๆ ได้ ถ้าผู้ใช้ขอให้ทำ ให้บอกขั้นตอนที่เขาต้องไปทำเองในหน้าจอที่เกี่ยวข้อง
-- ห้ามเดาหรือแต่งตัวเลข ถ้าไม่มีข้อมูลในสรุป ให้บอกว่าดูได้จากหน้าจอ/รายงานใด
 - ห้ามเปิดเผยข้อมูลของสาขาอื่นนอกขอบเขตที่ระบุ และห้ามให้ข้อมูลส่วนบุคคล เช่น เลขบัตรประชาชนเต็ม
+- ถ้าเครื่องมือคืนค่าว่างหรือ error แปลว่าผู้ใช้ไม่มีสิทธิ์เห็นหรือไม่มีข้อมูล ให้แจ้งตามนั้น ห้ามคาดเดา
 - ถ้าผู้ใช้ถามงานที่เกินสิทธิ์ของเขา ให้แจ้งว่าต้องให้ผู้มีสิทธิ์ (เช่น ผู้จัดการ/ผู้อนุมัติ/แอดมิน) ดำเนินการ
 
 ${HELP_DOC}
 
-ข้อมูลบริบทของผู้ใช้และตัวเลขล่าสุด:
-${snapshot}`;
+บริบทผู้ใช้:
+- ชื่อ: ${profile?.full_name || profile?.email || "-"}
+- สิทธิ์: ${roles.join(", ") || "ไม่ระบุ"}${isHQ ? " (ระดับสำนักงานใหญ่ เห็นได้ทุกสาขา)" : " (เห็นเฉพาะสาขาตนเอง)"}
+- สาขาต้นสังกัด: ${homeBranch?.name ?? "-"}${homeBranch ? ` (id ${homeBranch.id})` : ""}
+- ขอบเขตข้อมูลที่กำลังดู: ${scopeName}${scopeBranchId ? ` (branch_id ${scopeBranchId})` : ""}
+- วันที่วันนี้: ${today}`;
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const messages: ChatMessage[] = [{ role: "system", content: system }, ...data.messages];
+    const toolsUsed: string[] = [];
+
+    const callGateway = async (body: unknown): Promise<GatewayResponse> => {
+      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        console.error("[assistant] gateway error", res.status, detail.slice(0, 500));
+        if (res.status === 429) throw new Error("มีการใช้งานผู้ช่วย AI ถี่เกินไป กรุณาลองใหม่อีกครั้ง");
+        if (res.status === 402) throw new Error("เครดิต AI ของพื้นที่ทำงานหมด กรุณาเติมเครดิต");
+        throw new Error("ผู้ช่วย AI ไม่พร้อมใช้งานชั่วคราว กรุณาลองใหม่");
+      }
+      return (await res.json()) as GatewayResponse;
+    };
+
+    for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+      const lastRound = round === MAX_TOOL_ROUNDS;
+      const json = await callGateway({
         model: MODEL,
-        messages: [{ role: "system", content: system }, ...data.messages],
-      }),
-    });
-
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      console.error("[assistant] gateway error", res.status, detail.slice(0, 500));
-      if (res.status === 429) throw new Error("มีการใช้งานผู้ช่วย AI ถี่เกินไป กรุณาลองใหม่อีกครั้ง");
-      if (res.status === 402) throw new Error("เครดิต AI ของพื้นที่ทำงานหมด กรุณาเติมเครดิต");
-      throw new Error("ผู้ช่วย AI ไม่พร้อมใช้งานชั่วคราว กรุณาลองใหม่");
+        messages,
+        ...(lastRound ? {} : { tools: toolDefs, tool_choice: "auto" }),
+      });
+      const msg = json.choices?.[0]?.message;
+      const calls = msg?.tool_calls ?? [];
+      if (!msg || calls.length === 0) {
+        const answer = msg?.content?.trim();
+        if (!answer) throw new Error("ผู้ช่วย AI ไม่ได้ตอบกลับ กรุณาลองใหม่");
+        return { answer, scopeName, roles, toolsUsed };
+      }
+      messages.push({ role: "assistant", content: msg.content ?? null, tool_calls: calls });
+      const results = await Promise.all(calls.map(runTool));
+      calls.forEach((call, i) => {
+        toolsUsed.push(call.function.name);
+        messages.push({ role: "tool", tool_call_id: call.id, content: results[i] ?? "" });
+      });
     }
-
-    const json = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const answer = json.choices?.[0]?.message?.content?.trim();
-    if (!answer) throw new Error("ผู้ช่วย AI ไม่ได้ตอบกลับ กรุณาลองใหม่");
-
-    return { answer, scopeName, roles };
+    throw new Error("ผู้ช่วย AI ไม่ได้ตอบกลับ กรุณาลองใหม่");
   });
