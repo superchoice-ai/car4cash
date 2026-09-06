@@ -127,8 +127,6 @@ export async function runAssistant(params: RunAssistantParams): Promise<RunAssis
   const { supabase, userId, claims, token } = params;
   const data = { messages: params.messages, branchId: params.branchId ?? null };
 
-const { supabase, userId, claims } = context;
-
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("ยังไม่ได้เปิดใช้งาน AI สำหรับโปรเจกต์นี้");
 
