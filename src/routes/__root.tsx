@@ -80,12 +80,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ธารทรัพย์ | ระบบสินเชื่อจำนำเล่มทะเบียน" },
+      { title: "SuperChoice AI | ระบบสินเชื่อจำนำเล่มทะเบียน" },
       {
         name: "description",
         content: "ระบบบริหารสินเชื่อจำนำเล่มทะเบียนแลกเงินสด รองรับหลายสาขา อนุมัติออนไลน์ และรายงานผู้บริหาร",
       },
-      { name: "author", content: "ธารทรัพย์" },
+      { name: "author", content: "SuperChoice AI" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

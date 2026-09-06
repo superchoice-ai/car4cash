@@ -43,7 +43,7 @@ type ContractPrintData = {
 };
 
 export const FALLBACK_COMPANY: Required<Pick<CompanyConfig, "name" | "address">> = {
-  name: "บริษัท ธารทรัพย์ แอสเซท จำกัด",
+  name: "บริษัท SuperChoice AI แอสเซท จำกัด",
   address: "40/6 ถ.จุลจอมเกล้า ต.ท่าข้าม อ.พุนพิน จ.สุราษฎร์ธานี",
 };
 

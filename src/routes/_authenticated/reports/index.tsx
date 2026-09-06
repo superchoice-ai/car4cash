@@ -12,9 +12,9 @@ import { REPORTS } from "@/lib/reports";
 export const Route = createFileRoute("/_authenticated/reports/")({
   head: () => ({
     meta: [
-      { title: "รายงานผล | ธารทรัพย์" },
+      { title: "รายงานผล | SuperChoice AI" },
       { name: "description", content: "เมนูรายงานผลทั้งหมด — รายรับ รายจ่าย บัญชีลูกหนี้ ค้างชำระ และการติดตามหนี้ พิมพ์ A4 ภาษาไทย" },
-      { property: "og:title", content: "รายงานผล | ธารทรัพย์" },
+      { property: "og:title", content: "รายงานผล | SuperChoice AI" },
       { property: "og:description", content: "เมนูรายงานรูปแบบเดียวกับระบบเดิม พิมพ์กระดาษ A4" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

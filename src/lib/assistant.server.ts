@@ -17,7 +17,7 @@ const MAX_TOOL_ROUNDS = 6;
 const MODEL = "google/gemini-3.7-flash";
 
 const HELP_DOC = `
-คู่มือการใช้งานระบบสินเชื่อ "ธารทรัพย์" (สรุปสำหรับตอบคำถามผู้ใช้)
+คู่มือการใช้งานระบบสินเชื่อ "SuperChoice AI" (สรุปสำหรับตอบคำถามผู้ใช้)
 
 เมนูและหน้าจอหลัก
 - แดชบอร์ด (/dashboard): ภาพรวมยอดปล่อยสินเชื่อ ลูกหนี้คงค้าง สัญญาค้างชำระ และรายรับรายจ่ายของขอบเขตสาขาที่เลือก
@@ -166,7 +166,7 @@ export async function runAssistant(params: RunAssistantParams): Promise<RunAssis
       acceptedAudiences: ["authenticated"],
       scopes: [],
       sub: userId,
-      email: typeof claims["email"] === "string" ? (claims["email"] as string) : undefined,
+      ...(typeof claims["email"] === "string" ? { email: claims["email"] as string } : {}),
       clientId: "in-app-assistant",
     },
     bearer: { token },
@@ -200,8 +200,9 @@ export async function runAssistant(params: RunAssistantParams): Promise<RunAssis
     const parsed = z.object(tool.inputSchema ?? {}).safeParse(args);
     if (!parsed.success) return JSON.stringify({ error: "invalid arguments", issues: parsed.error.issues });
     try {
-      const result = await tool.handler(parsed.data, ctx);
-      const text = result.content
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = await tool.handler(parsed.data as any, ctx);
+      const text = (result.content ?? [])
         .map((c) => (c.type === "text" ? c.text : `[${c.type}]`))
         .join("\n");
       return (result.isError ? `ERROR: ${text}` : text).slice(0, 60_000);
@@ -218,7 +219,7 @@ export async function runAssistant(params: RunAssistantParams): Promise<RunAssis
       : (homeBranch?.name ?? "-");
   const today = new Date().toISOString().slice(0, 10);
 
-  const system = `คุณคือ "ผู้ช่วย AI ธารทรัพย์" ผู้ช่วยภายในของระบบสินเชื่อรถแลกเงิน ตอบเป็นภาษาไทยสุภาพ กระชับ ตรงประเด็น ใช้ bullet/ตารางเมื่อเหมาะสม
+  const system = `คุณคือ "ผู้ช่วย AI SuperChoice AI" ผู้ช่วยภายในของระบบสินเชื่อรถแลกเงิน ตอบเป็นภาษาไทยสุภาพ กระชับ ตรงประเด็น ใช้ bullet/ตารางเมื่อเหมาะสม
 
 หน้าที่:
 1) อธิบายวิธีใช้งานระบบ ฟังก์ชันแต่ละเมนู และขั้นตอนงาน ตามสิทธิ์ของผู้ใช้คนที่ถาม

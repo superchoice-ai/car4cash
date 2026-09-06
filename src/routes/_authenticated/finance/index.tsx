@@ -24,12 +24,12 @@ import {
 export const Route = createFileRoute("/_authenticated/finance/")({
   head: () => ({
     meta: [
-      { title: "สมุดรายรับ-รายจ่าย | ธารทรัพย์" },
+      { title: "สมุดรายรับ-รายจ่าย | SuperChoice AI" },
       {
         name: "description",
         content: "สมุดบัญชีรายรับและรายจ่ายรวมของสาขา แยกตามหมวดดอกเบี้ย ค่าปรับ ประกัน ทะเบียน และค่าติดตาม",
       },
-      { property: "og:title", content: "สมุดรายรับ-รายจ่าย | ธารทรัพย์" },
+      { property: "og:title", content: "สมุดรายรับ-รายจ่าย | SuperChoice AI" },
       { property: "og:description", content: "สรุปกระแสเงินสดรับ-จ่ายของสาขาแยกหมวด" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

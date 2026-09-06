@@ -31,9 +31,9 @@ import { formatMoney, formatNumber, todayISO, formatThaiDate } from "@/lib/forma
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "แดชบอร์ดผู้บริหาร | ธารทรัพย์" },
+      { title: "แดชบอร์ดผู้บริหาร | SuperChoice AI" },
       { name: "description", content: "ภาพรวมยอดปล่อยสินเชื่อ ยอดคงค้าง หนี้ค้างชำระ และผลงานรายสาขาแบบเรียลไทม์" },
-      { property: "og:title", content: "แดชบอร์ดผู้บริหาร | ธารทรัพย์" },
+      { property: "og:title", content: "แดชบอร์ดผู้บริหาร | SuperChoice AI" },
       { property: "og:description", content: "ภาพรวมสินเชื่อและผลงานรายสาขา" },
     ],
   }),

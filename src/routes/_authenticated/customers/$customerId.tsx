@@ -17,9 +17,9 @@ import {
 export const Route = createFileRoute("/_authenticated/customers/$customerId")({
   head: () => ({
     meta: [
-      { title: "ข้อมูลลูกค้า | ธารทรัพย์" },
+      { title: "ข้อมูลลูกค้า | SuperChoice AI" },
       { name: "description", content: "รายละเอียดลูกค้า รถที่ใช้เป็นหลักประกัน และประวัติสัญญาสินเชื่อ" },
-      { property: "og:title", content: "ข้อมูลลูกค้า | ธารทรัพย์" },
+      { property: "og:title", content: "ข้อมูลลูกค้า | SuperChoice AI" },
       { property: "og:description", content: "รายละเอียดลูกค้าและประวัติสินเชื่อ" },
     ],
   }),

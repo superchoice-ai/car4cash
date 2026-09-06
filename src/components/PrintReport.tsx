@@ -29,7 +29,7 @@ export function PrintReport({
   return (
     <div className={`rounded-lg border bg-card p-6 print:border-0 print:p-0 ${wide ? "text-xs" : "text-sm"}`}>
       <header className="mb-4 text-center">
-        <h2 className="text-lg font-bold">บริษัท ธารทรัพย์ จำกัด</h2>
+        <h2 className="text-lg font-bold">บริษัท SuperChoice AI จำกัด</h2>
         <p className="font-medium">{title}</p>
         {subtitle && <p className="text-sm">{subtitle}</p>}
         <p className="text-xs text-muted-foreground">

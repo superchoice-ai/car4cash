@@ -152,12 +152,12 @@ function AssistantPage() {
 export const Route = createFileRoute("/_authenticated/assistant/")({
   head: () => ({
     meta: [
-      { title: "ผู้ช่วย AI | ธารทรัพย์" },
+      { title: "ผู้ช่วย AI | SuperChoice AI" },
       {
         name: "description",
         content: "ผู้ช่วย AI ภาษาไทย ตอบวิธีใช้งานระบบสินเชื่อและวิเคราะห์ข้อมูลตามสิทธิ์ผู้ใช้แบบอ่านอย่างเดียว",
       },
-      { property: "og:title", content: "ผู้ช่วย AI | ธารทรัพย์" },
+      { property: "og:title", content: "ผู้ช่วย AI | SuperChoice AI" },
       { property: "og:description", content: "ถามวิธีใช้งานระบบและวิเคราะห์ข้อมูลสินเชื่อตามสิทธิ์ของคุณ" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

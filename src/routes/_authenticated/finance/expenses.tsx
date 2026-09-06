@@ -21,7 +21,7 @@ import { PAYMENT_METHOD_LABEL } from "@/lib/labels";
 import { categoriesFor, CASH_CATEGORY_LABEL, type CashCategory } from "@/lib/cashbook";
 
 export const Route = createFileRoute("/_authenticated/finance/expenses")({
-  head: () => ({ meta: [{ title: "บันทึกรายจ่าย | ธารทรัพย์" }, { name: "description", content: "แฟ้มรายจ่ายของสาขา — เงินเดือน ประกัน ทะเบียน ติดตาม สำนักงาน ดอกเบี้ย คืนเงินกู้ และต่างสาขา" }, { property: "og:title", content: "บันทึกรายจ่าย | ธารทรัพย์" }, { property: "og:description", content: "บันทึกใบสำคัญจ่ายแยกหมวดแบบเดียวกับระบบเดิม" }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  head: () => ({ meta: [{ title: "บันทึกรายจ่าย | SuperChoice AI" }, { name: "description", content: "แฟ้มรายจ่ายของสาขา — เงินเดือน ประกัน ทะเบียน ติดตาม สำนักงาน ดอกเบี้ย คืนเงินกู้ และต่างสาขา" }, { property: "og:title", content: "บันทึกรายจ่าย | SuperChoice AI" }, { property: "og:description", content: "บันทึกใบสำคัญจ่ายแยกหมวดแบบเดียวกับระบบเดิม" }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: ExpensesPage,
 });
 
