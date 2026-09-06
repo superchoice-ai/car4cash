@@ -95,12 +95,12 @@ export function createUserScopedClient(token: string): SupabaseClient<Database> 
   return createClient<Database>(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: {
-      headers: { Authorization: `Bearer ${token}` },
+      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
       fetch: (input, init) => {
         const headers = new Headers(init?.headers);
         if (isNewSupabaseApiKey(key) && headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
         headers.set("apikey", key);
-        if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+        if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
         return fetch(input, { ...init, headers });
       },
     },
