@@ -36,6 +36,7 @@ import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedSettingsImportRouteImport } from './routes/_authenticated/settings/import'
 import { Route as AuthenticatedStatusIndexRouteImport } from './routes/_authenticated/status/index'
 import { Route as ApiPublicStatusSyncRouteImport } from './routes/api/public/status-sync'
+import { Route as ApiPublicLineAssistantRouteImport } from './routes/api/public/line/assistant'
 import { Route as ApiPublicAuthLineCallbackRouteImport } from './routes/api/public/auth/line/callback'
 import { Route as ApiPublicAuthLineStartRouteImport } from './routes/api/public/auth/line/start'
 
@@ -192,6 +193,11 @@ const ApiPublicStatusSyncRoute = ApiPublicStatusSyncRouteImport.update({
   path: '/api/public/status-sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicLineAssistantRoute = ApiPublicLineAssistantRouteImport.update({
+  id: '/api/public/line/assistant',
+  path: '/api/public/line/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAuthLineCallbackRoute =
   ApiPublicAuthLineCallbackRouteImport.update({
     id: '/api/public/auth/line/callback',
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/reports/': typeof AuthenticatedReportsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
   '/status/': typeof AuthenticatedStatusIndexRoute
+  '/api/public/line/assistant': typeof ApiPublicLineAssistantRoute
   '/api/public/auth/line/callback': typeof ApiPublicAuthLineCallbackRoute
   '/api/public/auth/line/start': typeof ApiPublicAuthLineStartRoute
 }
@@ -261,6 +268,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/status': typeof AuthenticatedStatusIndexRoute
+  '/api/public/line/assistant': typeof ApiPublicLineAssistantRoute
   '/api/public/auth/line/callback': typeof ApiPublicAuthLineCallbackRoute
   '/api/public/auth/line/start': typeof ApiPublicAuthLineStartRoute
 }
@@ -293,6 +301,7 @@ export interface FileRoutesById {
   '/_authenticated/reports/': typeof AuthenticatedReportsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/status/': typeof AuthenticatedStatusIndexRoute
+  '/api/public/line/assistant': typeof ApiPublicLineAssistantRoute
   '/api/public/auth/line/callback': typeof ApiPublicAuthLineCallbackRoute
   '/api/public/auth/line/start': typeof ApiPublicAuthLineStartRoute
 }
@@ -325,6 +334,7 @@ export interface FileRouteTypes {
     | '/reports/'
     | '/settings/'
     | '/status/'
+    | '/api/public/line/assistant'
     | '/api/public/auth/line/callback'
     | '/api/public/auth/line/start'
   fileRoutesByTo: FileRoutesByTo
@@ -355,6 +365,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/settings'
     | '/status'
+    | '/api/public/line/assistant'
     | '/api/public/auth/line/callback'
     | '/api/public/auth/line/start'
   id:
@@ -386,6 +397,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports/'
     | '/_authenticated/settings/'
     | '/_authenticated/status/'
+    | '/api/public/line/assistant'
     | '/api/public/auth/line/callback'
     | '/api/public/auth/line/start'
   fileRoutesById: FileRoutesById
@@ -399,6 +411,7 @@ export interface RootRouteChildren {
   ContractPrintContractIdRoute: typeof ContractPrintContractIdRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   ApiPublicStatusSyncRoute: typeof ApiPublicStatusSyncRoute
+  ApiPublicLineAssistantRoute: typeof ApiPublicLineAssistantRoute
   ApiPublicAuthLineCallbackRoute: typeof ApiPublicAuthLineCallbackRoute
   ApiPublicAuthLineStartRoute: typeof ApiPublicAuthLineStartRoute
 }
@@ -594,6 +607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicStatusSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/line/assistant': {
+      id: '/api/public/line/assistant'
+      path: '/api/public/line/assistant'
+      fullPath: '/api/public/line/assistant'
+      preLoaderRoute: typeof ApiPublicLineAssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/auth/line/callback': {
       id: '/api/public/auth/line/callback'
       path: '/api/public/auth/line/callback'
@@ -668,6 +688,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContractPrintContractIdRoute: ContractPrintContractIdRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   ApiPublicStatusSyncRoute: ApiPublicStatusSyncRoute,
+  ApiPublicLineAssistantRoute: ApiPublicLineAssistantRoute,
   ApiPublicAuthLineCallbackRoute: ApiPublicAuthLineCallbackRoute,
   ApiPublicAuthLineStartRoute: ApiPublicAuthLineStartRoute,
 }
