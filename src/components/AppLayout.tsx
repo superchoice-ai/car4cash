@@ -144,7 +144,7 @@ function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-4">
           <div className="flex size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold">
-            SC AI
+            SC
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold">SuperChoice AI</p>
