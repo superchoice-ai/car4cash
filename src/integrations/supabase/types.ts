@@ -1381,6 +1381,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          line_user_id: string | null
           phone: string | null
           updated_at: string
         }
@@ -1391,6 +1392,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id: string
+          line_user_id?: string | null
           phone?: string | null
           updated_at?: string
         }
@@ -1401,6 +1403,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          line_user_id?: string | null
           phone?: string | null
           updated_at?: string
         }
