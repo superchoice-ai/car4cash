@@ -111,7 +111,7 @@ function AuthPage() {
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: `${window.location.origin}/auth`,
         data: { full_name: fullName.trim() },
       },
     });
@@ -128,7 +128,7 @@ function AuthPage() {
   const googleSignIn = async () => {
     setLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: `${window.location.origin}/auth`,
     });
     if (result.error) {
       setLoading(false);
@@ -144,7 +144,7 @@ function AuthPage() {
       <div className="w-full max-w-md">
         <div className="mb-6 text-center text-primary-foreground">
           <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-accent text-2xl font-bold text-accent-foreground">
-            SC AI
+            SC
           </div>
           <h1 className="text-2xl font-bold">SuperChoice AI</h1>
           <p className="text-sm opacity-80">ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด</p>
