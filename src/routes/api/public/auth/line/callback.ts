@@ -207,7 +207,7 @@ export const Route = createFileRoute("/api/public/auth/line/callback")({
         const link = await supabaseAdmin.auth.admin.generateLink({
           type: "magiclink",
           email: magicEmail,
-          options: { redirectTo: `${origin}/auth?line=1` },
+          options: { redirectTo: `${origin}/auth` },
         });
         if (link.error || !link.data.properties?.action_link) {
           return fail(link.error?.message ?? "สร้างลิงก์เข้าสู่ระบบไม่สำเร็จ");
