@@ -10,9 +10,9 @@ import { EVENT_LABEL } from "@/lib/labels";
 export const Route = createFileRoute("/_authenticated/notifications/")({
   head: () => ({
     meta: [
-      { title: "การแจ้งเตือน | ธารทรัพย์" },
+      { title: "การแจ้งเตือน | SuperChoice AI" },
       { name: "description", content: "การแจ้งเตือนเหตุการณ์สำคัญ เช่น ผลอนุมัติ ครบกำหนดชำระ และผลการสำรองข้อมูล" },
-      { property: "og:title", content: "การแจ้งเตือน | ธารทรัพย์" },
+      { property: "og:title", content: "การแจ้งเตือน | SuperChoice AI" },
       { property: "og:description", content: "ศูนย์รวมการแจ้งเตือนของระบบ" },
     ],
   }),

@@ -17,10 +17,10 @@ import { cellText, getReport, runReport } from "@/lib/reports";
 export const Route = createFileRoute("/_authenticated/reports/$reportId")({
   head: () => ({
     meta: [
-      { title: "พิมพ์รายงาน | ธารทรัพย์" },
+      { title: "พิมพ์รายงาน | SuperChoice AI" },
       { name: "description", content: "แสดงและพิมพ์รายงานผลรูปแบบกระดาษ A4 ภาษาไทย ตามรูปแบบเดียวกับระบบเดิม" },
-      { property: "og:title", content: "พิมพ์รายงาน | ธารทรัพย์" },
-      { property: "og:description", content: "รายงานผล A4 ภาษาไทยของระบบสินเชื่อธารทรัพย์" },
+      { property: "og:title", content: "พิมพ์รายงาน | SuperChoice AI" },
+      { property: "og:description", content: "รายงานผล A4 ภาษาไทยของระบบสินเชื่อSuperChoice AI" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

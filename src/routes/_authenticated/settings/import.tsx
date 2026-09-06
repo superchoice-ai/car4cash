@@ -23,12 +23,12 @@ import {
 export const Route = createFileRoute("/_authenticated/settings/import")({
   head: () => ({
     meta: [
-      { title: "นำเข้าข้อมูลระบบเดิม | ธารทรัพย์" },
+      { title: "นำเข้าข้อมูลระบบเดิม | SuperChoice AI" },
       {
         name: "description",
         content: "นำเข้าข้อมูลจากฐานข้อมูล MS Access ของระบบ VB6 เดิม (prawat, bill, begi, dok ฯลฯ) เข้าสู่ระบบใหม่",
       },
-      { property: "og:title", content: "นำเข้าข้อมูลระบบเดิม | ธารทรัพย์" },
+      { property: "og:title", content: "นำเข้าข้อมูลระบบเดิม | SuperChoice AI" },
       { property: "og:description", content: "ย้ายข้อมูลลูกค้าและใบเสร็จจาก MS Access เข้าสู่ระบบเว็บ" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

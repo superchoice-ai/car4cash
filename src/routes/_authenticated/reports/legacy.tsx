@@ -18,12 +18,12 @@ import { receiptTotal } from "@/lib/legacy-import";
 export const Route = createFileRoute("/_authenticated/reports/legacy")({
   head: () => ({
     meta: [
-      { title: "รายงานรูปแบบเดิม | ธารทรัพย์" },
+      { title: "รายงานรูปแบบเดิม | SuperChoice AI" },
       {
         name: "description",
         content: "รายงานรูปแบบเดียวกับระบบเดิม (Crystal Reports) — ทะเบียนใบเสร็จรายวันและทะเบียนลูกค้า พิมพ์กระดาษ A4",
       },
-      { property: "og:title", content: "รายงานรูปแบบเดิม | ธารทรัพย์" },
+      { property: "og:title", content: "รายงานรูปแบบเดิม | SuperChoice AI" },
       { property: "og:description", content: "พิมพ์รายงานรูปแบบเดิมจากข้อมูลที่นำเข้าจาก MS Access" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -126,7 +126,7 @@ function LegacyReportPage() {
 
       <div className="rounded-lg border bg-card p-6 print:border-0 print:p-0">
         <div className="mb-4 text-center">
-          <h2 className="text-lg font-bold">บริษัท ธารทรัพย์ จำกัด</h2>
+          <h2 className="text-lg font-bold">บริษัท SuperChoice AI จำกัด</h2>
           <p className="text-sm">
             {kind === "receipts" ? "ทะเบียนใบเสร็จรับเงินรายวัน" : "ทะเบียนลูกค้าและสัญญา (ข้อมูลระบบเดิม)"}
           </p>

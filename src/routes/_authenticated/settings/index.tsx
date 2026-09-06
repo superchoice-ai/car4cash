@@ -13,9 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export const Route = createFileRoute("/_authenticated/settings/")({
   head: () => ({
     meta: [
-      { title: "ตั้งค่าระบบ | ธารทรัพย์" },
+      { title: "ตั้งค่าระบบ | SuperChoice AI" },
       { name: "description", content: "จัดการสาขา ผู้ใช้งาน สิทธิ์การเข้าถึง และค่าตั้งต้นของระบบสินเชื่อ" },
-      { property: "og:title", content: "ตั้งค่าระบบ | ธารทรัพย์" },
+      { property: "og:title", content: "ตั้งค่าระบบ | SuperChoice AI" },
       { property: "og:description", content: "จัดการสาขา ผู้ใช้งาน และค่าตั้งต้นสินเชื่อ" },
     ],
   }),

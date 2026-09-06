@@ -24,7 +24,7 @@ export const sendLineTest = createServerFn({ method: "POST" })
     const explicitTargets = normalizeLineTargets(data.to);
     const config = explicitTargets.length ? null : await getLineRecipients();
     const targets = explicitTargets.length ? explicitTargets : (config?.to ?? []);
-    const text = data.text?.trim() || "ทดสอบการแจ้งเตือนจากระบบธารทรัพย์ ✅";
+    const text = data.text?.trim() || "ทดสอบการแจ้งเตือนจากระบบSuperChoice AI ✅";
 
     const result = await pushLineMessage(targets, text);
     return {

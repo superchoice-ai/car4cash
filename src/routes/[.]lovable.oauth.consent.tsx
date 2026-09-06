@@ -10,8 +10,8 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "อนุญาตการเชื่อมต่อ | ธารทรัพย์" },
-      { name: "description", content: "อนุมัติให้แอปภายนอกเข้าถึงระบบธารทรัพย์ในนามของคุณ" },
+      { title: "อนุญาตการเชื่อมต่อ | SuperChoice AI" },
+      { name: "description", content: "อนุมัติให้แอปภายนอกเข้าถึงระบบSuperChoice AIในนามของคุณ" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -83,7 +83,7 @@ function Consent() {
           </div>
           <CardTitle>เชื่อมต่อ {clientName} กับบัญชีของคุณ</CardTitle>
           <CardDescription>
-            {clientName} จะสามารถอ่านข้อมูลในระบบธารทรัพย์ได้ตามสิทธิ์และสาขาของคุณ (อ่านอย่างเดียว)
+            {clientName} จะสามารถอ่านข้อมูลในระบบSuperChoice AIได้ตามสิทธิ์และสาขาของคุณ (อ่านอย่างเดียว)
             การอนุมัติ ชำระเงิน หรือแก้ไขข้อมูลยังต้องทำในระบบเท่านั้น
           </CardDescription>
         </CardHeader>

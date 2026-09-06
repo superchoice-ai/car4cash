@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { SEVERITY_LABEL, STATE_LABEL, formatThaiTime, type IncidentSeverity, type IncidentState } from "@/lib/status-feed";
 
 export const Route = createFileRoute("/_authenticated/status/")({
-  head: () => ({ meta: [{ title: "สถานะระบบ & แจ้งเตือน | ธารทรัพย์" }, { name: "description", content: "ติดตามสถานะแพลตฟอร์มแบบเรียลไทม์ สรุปผลกระทบ ระดับความรุนแรง เวลาที่พบปัญหาและเวลาที่แก้ไขเสร็จ" }, { property: "og:title", content: "สถานะระบบ & แจ้งเตือน | ธารทรัพย์" }, { property: "og:description", content: "แจ้งเตือนเหตุขัดข้องของแพลตฟอร์มผ่านเบราว์เซอร์และ LINE" }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
+  head: () => ({ meta: [{ title: "สถานะระบบ & แจ้งเตือน | SuperChoice AI" }, { name: "description", content: "ติดตามสถานะแพลตฟอร์มแบบเรียลไทม์ สรุปผลกระทบ ระดับความรุนแรง เวลาที่พบปัญหาและเวลาที่แก้ไขเสร็จ" }, { property: "og:title", content: "สถานะระบบ & แจ้งเตือน | SuperChoice AI" }, { property: "og:description", content: "แจ้งเตือนเหตุขัดข้องของแพลตฟอร์มผ่านเบราว์เซอร์และ LINE" }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: StatusPage,
 });
 

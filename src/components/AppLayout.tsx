@@ -144,10 +144,10 @@ function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="flex items-center gap-3 border-b border-sidebar-border px-5 py-4">
           <div className="flex size-10 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-bold">
-            ธส
+            SC AI
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold">ธารทรัพย์</p>
+            <p className="truncate text-sm font-bold">SuperChoice AI</p>
             <p className="truncate text-[11px] text-sidebar-foreground/70">สินเชื่อจำนำเล่มทะเบียน</p>
           </div>
           <button className="ml-auto lg:hidden" onClick={() => setOpen(false)} aria-label="ปิดเมนู">

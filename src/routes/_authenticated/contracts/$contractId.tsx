@@ -17,9 +17,9 @@ import { CONTRACT_STATUS_LABEL, INSTALLMENT_STATUS_LABEL, PAYMENT_METHOD_LABEL }
 export const Route = createFileRoute("/_authenticated/contracts/$contractId")({
   head: () => ({
     meta: [
-      { title: "รายละเอียดสัญญา | ธารทรัพย์" },
+      { title: "รายละเอียดสัญญา | SuperChoice AI" },
       { name: "description", content: "ตารางผ่อนชำระ ประวัติการรับชำระ และยอดคงค้างของสัญญาสินเชื่อ" },
-      { property: "og:title", content: "รายละเอียดสัญญา | ธารทรัพย์" },
+      { property: "og:title", content: "รายละเอียดสัญญา | SuperChoice AI" },
       { property: "og:description", content: "ตารางผ่อนชำระและประวัติการชำระเงิน" },
     ],
   }),

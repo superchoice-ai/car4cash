@@ -14,9 +14,9 @@ import { Loader2, ShieldCheck } from "lucide-react";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "เข้าสู่ระบบ | ธารทรัพย์ สินเชื่อจำนำเล่มทะเบียน" },
+      { title: "เข้าสู่ระบบ | SuperChoice AI สินเชื่อจำนำเล่มทะเบียน" },
       { name: "description", content: "เข้าสู่ระบบเพื่อจัดการสินเชื่อจำนำเล่มทะเบียนของสาขาคุณ" },
-      { property: "og:title", content: "เข้าสู่ระบบ | ธารทรัพย์" },
+      { property: "og:title", content: "เข้าสู่ระบบ | SuperChoice AI" },
       { property: "og:description", content: "ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด สำหรับพนักงานและผู้บริหาร" },
     ],
   }),
@@ -145,9 +145,9 @@ function AuthPage() {
       <div className="w-full max-w-md">
         <div className="mb-6 text-center text-primary-foreground">
           <div className="mx-auto mb-3 flex size-16 items-center justify-center rounded-2xl bg-accent text-2xl font-bold text-accent-foreground">
-            ธส
+            SC AI
           </div>
-          <h1 className="text-2xl font-bold">ธารทรัพย์</h1>
+          <h1 className="text-2xl font-bold">SuperChoice AI</h1>
           <p className="text-sm opacity-80">ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด</p>
         </div>
 

@@ -20,6 +20,7 @@ const KEYS = [
   { key: "LINE_LOGIN_REDIRECT_URI", label: "LINE Login – Callback URL (คงที่)", category: "line_login" },
   { key: "LINE_CHANNEL_ACCESS_TOKEN", label: "LINE OA – Channel Access Token", category: "line_oa" },
   { key: "LINE_CHANNEL_SECRET", label: "LINE OA – Channel Secret", category: "line_oa" },
+  { key: "LINE_N8N_CAR4CASH_SECRET", label: "n8n → LINE Assistant – Shared Secret (x-car4cash-secret)", category: "line_oa" },
 ] as const;
 
 interface SecretRow {
@@ -35,7 +36,7 @@ export function LineSettings() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [recipientDraft, setRecipientDraft] = useState("");
   const [testTo, setTestTo] = useState("");
-  const [testMessage, setTestMessage] = useState("ทดสอบการแจ้งเตือนจากระบบธารทรัพย์ ✅");
+  const [testMessage, setTestMessage] = useState("ทดสอบการแจ้งเตือนจากระบบSuperChoice AI ✅");
   const testFn = useServerFn(sendLineTest);
   const saveRecipientsFn = useServerFn(saveLineRecipients);
 
