@@ -36,6 +36,7 @@ type ErrorCode =
   | "user_not_found"
   | "user_inactive"
   | "no_permission"
+  | "ai_mode_disabled"
   | "assistant_failed"
   | "internal_error";
 
@@ -72,6 +73,12 @@ export const Route = createFileRoute("/api/public/line/assistant")({
             request.headers.get("x-n8n-secret") ??
             (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
           if (!provided || !safeEqual(provided, expected)) return fail(401, "unauthorized", "shared secret ไม่ถูกต้อง");
+
+          // ตรวจหลังยืนยัน shared secret เพื่อไม่เปิดเผยสถานะระบบแก่ผู้เรียกที่ไม่ได้รับอนุญาต
+          const { isAiModeEnabled } = await import("@/lib/ai-modes.server");
+          if (!(await isAiModeEnabled("chat_tools"))) {
+            return fail(503, "ai_mode_disabled", "AI ผ่านแชท tools/LINE ถูกปิดใช้งานโดยผู้ดูแลระบบ");
+          }
 
           // ---- 2) ตรวจ body ----
           const parsed = BodySchema.safeParse(await request.json().catch(() => null));
