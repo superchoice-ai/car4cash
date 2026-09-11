@@ -5,19 +5,21 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
+// mcpPlugin() is intentionally NOT registered here.
+//
+// The MCP routes are checked into the repo and must stay checked in:
+//   - src/routes/mcp.ts  (hand-authored: gates /mcp on the admin "external_mcp" AI Mode)
+//   - src/routes/[.well-known]/oauth-protected-resource.ts  (generated snapshot, kept as-is)
+//   - .lovable/mcp/manifest.json  (generated snapshot; refresh with the extract-manifest step)
+//
+// Running the plugin aborts the build because it refuses to overwrite the hand-authored
+// mcp.ts, and pointing it at a missing entry makes it DELETE the generated OAuth route.
+// The only env value it injected (VITE_SUPABASE_PROJECT_ID) already comes from .env.
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
-  },
-  vite: {
-    // src/routes/mcp.ts and src/routes/[.well-known]/oauth-protected-resource.ts are
-    // authored by hand so the /mcp endpoint can honour the admin "external_mcp" AI Mode
-    // toggle. Point the plugin at a non-existent entry so it keeps the env define but
-    // does not try to overwrite those user-authored routes (which aborts the build).
-    plugins: [mcpPlugin({ mcpEntry: "src/lib/mcp/route-generation-disabled.ts" })],
   },
 });
