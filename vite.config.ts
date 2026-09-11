@@ -14,6 +14,10 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
-    plugins: [mcpPlugin()],
+    // src/routes/mcp.ts and src/routes/[.well-known]/oauth-protected-resource.ts are
+    // authored by hand so the /mcp endpoint can honour the admin "external_mcp" AI Mode
+    // toggle. Point the plugin at a non-existent entry so it keeps the env define but
+    // does not try to overwrite those user-authored routes (which aborts the build).
+    plugins: [mcpPlugin({ mcpEntry: "src/lib/mcp/route-generation-disabled.ts" })],
   },
 });
