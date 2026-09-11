@@ -21,6 +21,11 @@ export const askAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: AskInput) => input)
   .handler(async ({ data, context }) => {
+    const { isAiModeEnabled } = await import("@/lib/ai-modes.server");
+    if (!(await isAiModeEnabled("assistant"))) {
+      throw new Error("ผู้ช่วย AI ถูกปิดใช้งานโดยผู้ดูแลระบบ");
+    }
+
     const { supabase, userId, claims } = context;
     const { runAssistant, sanitizeMessages } = await import("@/lib/assistant.server");
 
