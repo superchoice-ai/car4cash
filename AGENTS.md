@@ -158,3 +158,93 @@ If ownership or lineage cannot be proven, STOP and request clarification. Never 
 
 This separation is mandatory because Lovable uses the production published URL and project preview URL as the practical PROD/Dev boundary.
 <!-- LOVABLE PROD/DEV BRANCH SEPARATION — END -->
+
+<!-- BRANCH LIFECYCLE AND CROSS-REPOSITORY PORTING — BEGIN -->
+
+# CRITICAL RULE — Branch Lifecycle, Generated-Artifact Ownership, and Cross-Repository Porting
+
+This rule applies to **every action involving any branch**, including branch creation, checkout, synchronization, comparison, rebase, commit, push, pull request, merge, release, rollback, deletion, cherry-pick, file copy, and feature porting. It applies before, during, and after the action.
+
+## 1. Same-repository branches
+
+Before creating or changing a branch:
+
+1. Verify the exact repository, source branch, target branch, and current commit SHA.
+2. Create the branch from the intended verified baseline; do not assume the active branch or cached preview is current.
+3. Inventory generated files, plugin-managed files, routes, manifests, schemas, auth/RLS rules, build configuration, lockfiles, and deployment configuration that the change could affect.
+4. Record which system owns each generated artifact: repository source, build script, plugin, external platform, or manual maintenance.
+
+Before merging branches in the same repository:
+
+1. Treat the merge result as a new system state, not as proof that either branch remains valid.
+2. Preserve the latest target-branch governance files and required generated/runtime artifacts.
+3. Review deleted and renamed files explicitly; a clean textual merge is not proof of functional compatibility.
+4. Run the target repository's required checks, including typecheck, build, lint/tests where configured, route inventory, manifest/OAuth parity when applicable, schema/Auth/RLS checks, and preview/runtime verification.
+5. Do not approve or complete the merge if generated-artifact ownership is unclear, a plugin may overwrite repository-owned files, required artifacts disappear, a security gate can be bypassed, or preview and build results disagree.
+
+## 2. Cross-repository branches and integrations
+
+A branch in a target repository MUST be created from that target repository's own verified default branch. It MUST NOT be created from a source repository's commit or history.
+
+Unless the owner explicitly authorizes the exact operation after a complete compatibility review:
+
+- Do not merge a source repository or its branch into another repository's `main`.
+- Do not cherry-pick an entire feature series or bulk commit set across repositories.
+- Do not replace the target repository's package manifest, lockfile, build configuration, route tree, environment configuration, database migrations, auth/RLS policies, generated manifests, OAuth routes, deployment identifiers, or project identifiers with source-repository versions.
+- Do not use `--allow-unrelated-histories` or any equivalent mechanism to combine unrelated repositories.
+
+The default safe method is **porting**, not repository merging:
+
+1. Create a feature branch from the target repository's own `main`.
+2. Port only the approved concept and individually selected files or code.
+3. Adapt the implementation to the target repository's architecture, dependencies, naming, routing, build system, database schema, Auth/RLS model, deployment model, and generated-artifact ownership.
+4. Maintain a source-to-target mapping of what was ported, rewritten, omitted, and why.
+5. Re-run all target-repository validation gates before any merge to the target `main`.
+
+Example: a feature from `superchoice-ai/car4cash` must not be merged or bulk cherry-picked into `superchoice-ai/tansub/main`. Create a branch from `tansub/main`, then port and adapt only the approved feature pieces.
+
+## 3. Generated files and plugin-managed paths
+
+Before editing a generated or plugin-managed path, establish a single authoritative owner.
+
+- If a plugin or generator owns the path, do not hand-edit it unless the owner explicitly approves changing that ownership model.
+- If the repository owns the path, disable or remove automatic regeneration from the relevant build step safely, preserve every required runtime artifact in version control, and verify that no plugin can overwrite or delete it.
+- Never allow a build-time generator to mutate tracked source unexpectedly.
+- After any generator, plugin, dependency, or build-script change, audit deleted/renamed files and verify routes, OAuth endpoints, manifests, schemas, types, and security gates.
+- A successful build alone is insufficient when required artifacts were deleted, generated from stale inputs, or made bypassable.
+
+## 4. Required stop conditions
+
+Stop before writing, pushing, or merging when any of the following is true:
+
+- repository, source branch, target branch, or commit baseline is uncertain;
+- source and target repositories have unrelated histories;
+- dependency, runtime, schema, Auth/RLS, or deployment compatibility is unproven;
+- plugin/generated-file ownership conflicts or is unclear;
+- a required route, manifest, OAuth endpoint, security gate, migration, or configuration file is missing;
+- build, preview, deployed runtime, or branch synchronization results disagree;
+- the requested cross-repository action exceeds the owner's explicit authorization.
+
+Report the blocker and request owner direction. Do not guess, silently broaden scope, or bypass the gate.
+
+## 5. No AI-to-AI delegation by default
+
+An AI assistant MUST NOT prompt, delegate work to, or conduct implementation conversations with another AI agent or AI-powered builder—including Lovable AI Agent—unless the owner explicitly authorizes the exact external AI system and scope for that action.
+
+Tool availability, an open browser tab, repository connectivity, or prior authorization for a different action is not authorization for AI-to-AI communication. Direct deterministic use of GitHub repository tools is not AI-to-AI delegation.
+
+## 6. Evidence required
+
+For every branch integration or cross-repository port, retain concise evidence of:
+
+- verified repository/branch/commit baselines;
+- changed, deleted, renamed, generated, and plugin-owned files;
+- dependency and configuration differences;
+- validation commands and results;
+- route/manifest/OAuth/schema/Auth/RLS/security checks where applicable;
+- preview or runtime result;
+- owner authorization for any exception.
+
+If this evidence is incomplete, the change is not ready to merge.
+
+<!-- BRANCH LIFECYCLE AND CROSS-REPOSITORY PORTING — END -->
