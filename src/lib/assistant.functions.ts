@@ -35,6 +35,7 @@ export const askAssistant = createServerFn({ method: "POST" })
     if (!token) throw new Error("Unauthorized");
 
     return runAssistant({
+      channel: "assistant",
       supabase,
       userId,
       claims: claims as Record<string, unknown>,
