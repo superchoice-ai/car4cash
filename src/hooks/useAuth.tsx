@@ -2,6 +2,12 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { waitForAuthenticatedSession } from "@/lib/auth-session";
+import {
+  allowBusinessMutations,
+  blockBusinessMutations,
+  waitForPendingBusinessMutations,
+} from "@/lib/active-session";
+import { checkCurrentUserActive } from "@/lib/active-user-check";
 import type { AppRole } from "@/lib/labels";
 
 export interface Branch {
@@ -37,6 +43,7 @@ interface AuthValue {
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
+const ACTIVE_POLL_MS = 15 * 60 * 1000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -67,13 +74,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let forcingLogout = false;
+
+    const forceInactiveLogout = async () => {
+      if (forcingLogout) return;
+      forcingLogout = true;
+      blockBusinessMutations();
+
+      await waitForPendingBusinessMutations();
+      await supabase.auth.signOut();
+
+      if (mounted) {
+        setSession(null);
+        setProfile(null);
+        setBranch(null);
+        setRoles([]);
+      }
+      window.location.replace("/auth?inactive=1");
+    };
+
+    const checkActive = async (): Promise<boolean> => {
+      const result = await checkCurrentUserActive();
+      if (result.status === "unavailable") {
+        blockBusinessMutations();
+        console.error("[Auth] Active-user check unavailable", result.error);
+        return false;
+      }
+      if (result.status === "inactive") {
+        await forceInactiveLogout();
+        return false;
+      }
+      allowBusinessMutations();
+      return true;
+    };
+
+    const loadActiveProfile = async (next: Session) => {
+      if (await checkActive()) await loadProfile(next.user.id);
+    };
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (!mounted) return;
       setSession(next);
       if (next?.user) {
         setTimeout(() => {
-          void loadProfile(next.user.id);
+          void loadActiveProfile(next);
         }, 0);
       } else {
         setProfile(null);
@@ -85,12 +129,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void waitForAuthenticatedSession().then(async ({ session: restoredSession }) => {
       if (!mounted) return;
       setSession(restoredSession);
-      if (restoredSession?.user) await loadProfile(restoredSession.user.id);
+      if (restoredSession?.user) await loadActiveProfile(restoredSession);
       setLoading(false);
     });
 
+    const checkCurrentSession = () => {
+      void supabase.auth.getSession().then(({ data }) => {
+        if (data.session?.user) void checkActive();
+      });
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") checkCurrentSession();
+    };
+
+    const poll = window.setInterval(checkCurrentSession, ACTIVE_POLL_MS);
+    window.addEventListener("focus", checkCurrentSession);
+    window.addEventListener("online", checkCurrentSession);
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
       mounted = false;
+      window.clearInterval(poll);
+      window.removeEventListener("focus", checkCurrentSession);
+      window.removeEventListener("online", checkCurrentSession);
+      document.removeEventListener("visibilitychange", handleVisibility);
       sub.subscription.unsubscribe();
     };
   }, []);

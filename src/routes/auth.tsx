@@ -22,8 +22,12 @@ export const Route = createFileRoute("/auth")({
       { property: "og:description", content: "ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด สำหรับพนักงานและผู้บริหาร" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { next?: string } =>
-    typeof s["next"] === "string" ? { next: s["next"] } : {},
+  validateSearch: (search: Record<string, unknown>): { next?: string; inactive?: string } => {
+    const result: { next?: string; inactive?: string } = {};
+    if (typeof search["next"] === "string") result.next = search["next"];
+    if (search["inactive"] === "1") result.inactive = "1";
+    return result;
+  },
   component: AuthPage,
 });
 
@@ -40,7 +44,7 @@ function safeNext(value: string | null | undefined): string | null {
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { next: nextParam } = Route.useSearch();
+  const { next: nextParam, inactive } = Route.useSearch();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -49,6 +53,7 @@ function AuthPage() {
   useEffect(() => {
     const err = new URLSearchParams(window.location.search).get("line_error");
     if (err) toast.error(err);
+    if (inactive === "1") toast.error("บัญชีผู้ใช้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
 
     // Preserve the post-login target across Google/LINE/email round-trips.
     const fromParam = safeNext(nextParam);
@@ -71,7 +76,7 @@ function AuthPage() {
       if (session) goAfterLogin();
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate, nextParam]);
+  }, [inactive, navigate, nextParam]);
 
 
   const validate = () => {
