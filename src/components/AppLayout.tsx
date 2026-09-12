@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { ROLE_LABEL } from "@/lib/labels";
 import { BranchFilterProvider, useBranchFilter } from "@/hooks/useBranchFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EnvironmentVersionInfo } from "@/components/EnvironmentVersionInfo";
 
 
 interface NavItem {
@@ -148,7 +149,10 @@ function AppShell({ children }: { children: ReactNode }) {
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold">SuperChoice AI</p>
-            <p className="truncate text-[11px] text-sidebar-foreground/70">สินเชื่อจำนำเล่มทะเบียน</p>
+            <p className="flex items-center gap-1 text-[11px] text-sidebar-foreground/70">
+              <span className="truncate">สินเชื่อจำนำเล่มทะเบียน</span>
+              <EnvironmentVersionInfo className="text-sidebar-foreground/80" />
+            </p>
           </div>
           <button className="ml-auto lg:hidden" onClick={() => setOpen(false)} aria-label="ปิดเมนู">
             <X className="size-5" />

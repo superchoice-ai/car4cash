@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { waitForAuthenticatedSession } from "@/lib/auth-session";
 import type { AppRole } from "@/lib/labels";
 
 export interface Branch {
@@ -81,10 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    void supabase.auth.getSession().then(async ({ data }) => {
+    void waitForAuthenticatedSession().then(async ({ session: restoredSession }) => {
       if (!mounted) return;
-      setSession(data.session);
-      if (data.session?.user) await loadProfile(data.session.user.id);
+      setSession(restoredSession);
+      if (restoredSession?.user) await loadProfile(restoredSession.user.id);
       setLoading(false);
     });
 

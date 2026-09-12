@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Printer } from "lucide-react";
@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState } from "@/components/Common";
+import { StandardPagination, paginateRows } from "@/components/StandardPagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,8 @@ function LegacyReportPage() {
   const [from, setFrom] = useState(todayISO());
   const [to, setTo] = useState(todayISO());
   const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const { data: receipts, isLoading: loadingR } = useQuery({
     queryKey: ["legacy-receipts", from, to, branchId],
@@ -76,7 +79,16 @@ function LegacyReportPage() {
   });
 
   const rows = receipts ?? [];
+  const customerRows = customers ?? [];
+  const receiptPagination = paginateRows(rows, page, pageSize);
+  const customerPagination = paginateRows(customerRows, page, pageSize);
+  const pagination =
+    kind === "receipts"
+      ? { page: receiptPagination.page, start: receiptPagination.start }
+      : { page: customerPagination.page, start: customerPagination.start };
   const sum = (fn: (r: (typeof rows)[number]) => number) => rows.reduce((a, r) => a + fn(r), 0);
+
+  useEffect(() => setPage(1), [kind, from, to, keyword, branchId, pageSize]);
 
   return (
     <div>
@@ -160,8 +172,11 @@ function LegacyReportPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r) => (
-                    <TableRow key={r.id}>
+                  {rows.map((r, index) => (
+                    <TableRow
+                      key={r.id}
+                      className={index >= pagination.start && index < pagination.start + pageSize ? undefined : "hidden print:table-row"}
+                    >
                       <TableCell className="tabular">{r.bill_no}</TableCell>
                       <TableCell className="tabular whitespace-nowrap">{formatThaiDate(r.paid_on)}</TableCell>
                       <TableCell className="tabular">{r.legacy_code}</TableCell>
@@ -189,6 +204,15 @@ function LegacyReportPage() {
                   </TableRow>
                 </TableFooter>
               </Table>
+              <div className="no-print">
+                <StandardPagination
+                  page={pagination.page}
+                  pageSize={pageSize}
+                  total={rows.length}
+                  onPageChange={setPage}
+                  onPageSizeChange={setPageSize}
+                />
+              </div>
             </div>
           )
         ) : loadingC ? (
@@ -212,8 +236,11 @@ function LegacyReportPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(customers ?? []).map((c) => (
-                  <TableRow key={c.id}>
+                {customerRows.map((c, index) => (
+                  <TableRow
+                    key={c.id}
+                    className={index >= pagination.start && index < pagination.start + pageSize ? undefined : "hidden print:table-row"}
+                  >
                     <TableCell className="tabular">{c.legacy_code}</TableCell>
                     <TableCell className="max-w-[180px] truncate">{c.full_name ?? "-"}</TableCell>
                     <TableCell>{[c.car_brand, c.car_type].filter(Boolean).join(" ") || "-"}</TableCell>
@@ -227,6 +254,15 @@ function LegacyReportPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="no-print">
+              <StandardPagination
+                page={pagination.page}
+                pageSize={pageSize}
+                total={customerRows.length}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            </div>
           </div>
         )}
       </div>

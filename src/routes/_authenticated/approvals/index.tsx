@@ -99,9 +99,12 @@ function ApprovalsPage() {
       setNote("");
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["approvals"] }),
+        qc.invalidateQueries({ queryKey: ["approval-application-details"] }),
         qc.invalidateQueries({ queryKey: ["applications"] }),
         qc.invalidateQueries({ queryKey: ["customers"] }),
         qc.invalidateQueries({ queryKey: ["contracts"] }),
+        qc.invalidateQueries({ queryKey: ["contract"] }),
+        qc.invalidateQueries({ queryKey: ["approved-apps"] }),
       ]);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -179,3 +182,4 @@ function ApprovalsPage() {
     <Card><CardContent className="p-0">{isLoading ? <div className="p-6">กำลังโหลด...</div> : filtered.length === 0 ? <div className="p-6"><EmptyState title="ไม่มีคำขออนุมัติที่ตรงเงื่อนไข" /></div> : <><div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>ประเภท</TableHead><TableHead>รายการ</TableHead><TableHead>เหตุผล</TableHead><TableHead>สาขา</TableHead><TableHead>เวลาขอ</TableHead><TableHead>สถานะ</TableHead><TableHead>ผู้อนุมัติ</TableHead><TableHead>เวลาพิจารณา</TableHead><TableHead className="text-right">จัดการ</TableHead></TableRow></TableHeader><TableBody>{pagination.rows.map((a) => <TableRow key={a.id}><TableCell>{APPROVAL_TYPE_LABEL[a.type] ?? a.type}</TableCell><TableCell className="tabular font-medium"><HoverCard openDelay={250}><HoverCardTrigger asChild><button type="button" className="inline-flex items-center gap-1.5 text-left underline-offset-4 hover:text-primary hover:underline"><Info className="size-3.5 text-muted-foreground" />{a.entity_label ?? "-"}</button></HoverCardTrigger><HoverCardContent align="start" className="w-[420px] max-w-[90vw]">{approvalDetails(a)}</HoverCardContent></HoverCard></TableCell><TableCell className="max-w-72"><HoverCard openDelay={250}><HoverCardTrigger asChild><span className="line-clamp-2 cursor-help">{a.reason ?? "-"}</span></HoverCardTrigger><HoverCardContent align="start" className="w-[420px] max-w-[90vw]">{approvalDetails(a)}</HoverCardContent></HoverCard></TableCell><TableCell>{a.branches?.name ?? "-"}</TableCell><TableCell className="tabular text-muted-foreground">{formatThaiDateTime(a.created_at)}</TableCell><TableCell><StatusPill status={a.status} label={APPROVAL_STATUS_LABEL[a.status] ?? a.status} /></TableCell><TableCell>{a.decided_by ? (profileNames.get(a.decided_by) ?? a.decided_by) : "-"}</TableCell><TableCell className="tabular text-muted-foreground">{a.decided_at ? formatThaiDateTime(a.decided_at) : "-"}</TableCell><TableCell className="text-right">{a.status === "pending" && canApprove && <div className="flex justify-end gap-1"><Button size="sm" onClick={() => decide.mutate({ id: a.id, approve: true })} disabled={decide.isPending}><Check className="size-3.5" /> อนุมัติ</Button><Button size="sm" variant="outline" onClick={() => decide.mutate({ id: a.id, approve: false })} disabled={decide.isPending}><X className="size-3.5" /> ไม่อนุมัติ</Button></div>}</TableCell></TableRow>)}</TableBody></Table></div><StandardPagination page={pagination.page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize}/></>}</CardContent></Card>
   </div>;
 }
+

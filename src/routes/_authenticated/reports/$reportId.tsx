@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Printer } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, EmptyState } from "@/components/Common";
+import { StandardPagination, paginateRows } from "@/components/StandardPagination";
 import { PrintReport } from "@/components/PrintReport";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +39,8 @@ function ReportViewPage() {
   const [from, setFrom] = useState(monthStart);
   const [to, setTo] = useState(todayISO());
   const [keyword, setKeyword] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const { data, isLoading } = useQuery({
     queryKey: ["report", reportId, from, to, keyword, branchId],
@@ -45,11 +48,14 @@ function ReportViewPage() {
     queryFn: () => runReport(reportId, { from, to, keyword, branchId }),
   });
 
+  useEffect(() => setPage(1), [reportId, from, to, keyword, branchId, pageSize]);
+
   if (!def) return <EmptyState title="ไม่พบรายงานนี้" description="กลับไปเลือกรายงานจากเมนูรายงานผล" />;
 
   const columns = data?.columns ?? [];
   const rows = data?.rows ?? [];
   const totalKeys = data?.totalKeys ?? [];
+  const pagination = paginateRows(rows, page, pageSize);
 
   return (
     <div>
@@ -107,6 +113,7 @@ function ReportViewPage() {
         ) : rows.length === 0 ? (
           <EmptyState title="ไม่พบข้อมูลตามเงื่อนไขที่เลือก" />
         ) : (
+          <>
           <Table className="text-xs">
             <TableHeader>
               <TableRow>
@@ -119,7 +126,10 @@ function ReportViewPage() {
             </TableHeader>
             <TableBody>
               {rows.map((r, idx) => (
-                <TableRow key={idx}>
+                <TableRow
+                  key={idx}
+                  className={idx >= pagination.start && idx < pagination.start + pageSize ? undefined : "hidden print:table-row"}
+                >
                   {columns.map((c) => (
                     <TableCell key={c.key} className={c.align === "right" || c.money ? "tabular text-right" : ""}>
                       {cellText(c, r[c.key])}
@@ -145,8 +155,19 @@ function ReportViewPage() {
               </TableFooter>
             )}
           </Table>
+          <div className="no-print">
+            <StandardPagination
+              page={pagination.page}
+              pageSize={pageSize}
+              total={rows.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          </div>
+          </>
         )}
       </PrintReport>
     </div>
   );
 }
+

@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, ShieldCheck } from "lucide-react";
+import { EnvironmentVersionInfo } from "@/components/EnvironmentVersionInfo";
+import { waitForAuthenticatedSession } from "@/lib/auth-session";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -62,8 +64,8 @@ function AuthPage() {
       void navigate({ to: "/dashboard", replace: true });
     };
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) goAfterLogin();
+    void waitForAuthenticatedSession().then(({ session }) => {
+      if (session) goAfterLogin();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (session) goAfterLogin();
@@ -147,7 +149,10 @@ function AuthPage() {
             SC
           </div>
           <h1 className="text-2xl font-bold">SuperChoice AI</h1>
-          <p className="text-sm opacity-80">ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด</p>
+          <p className="inline-flex items-center justify-center gap-1 text-sm opacity-80">
+            ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด
+            <EnvironmentVersionInfo className="text-primary-foreground/90" />
+          </p>
         </div>
 
         <Card>
