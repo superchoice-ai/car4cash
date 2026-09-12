@@ -54,7 +54,14 @@ interface GatewayResponse {
   choices?: { message?: { content?: string | null; tool_calls?: ToolCall[] } }[];
 }
 
+export type AssistantChannel = "chat_tools" | "assistant";
+
 export interface RunAssistantParams {
+  /**
+   * ช่องทางที่เรียกแกนกลางนี้ ต้องระบุทุกครั้งเพื่อให้ TypeScript บังคับว่า
+   * caller ใหม่จะไม่สามารถข้าม AI Mode gate โดยไม่ได้ตั้งใจ
+   */
+  channel: AssistantChannel;
   /** client ที่ทำงานในฐานะผู้ใช้ (RLS) */
   supabase: SupabaseClient<Database>;
   userId: string;
@@ -126,6 +133,14 @@ export function decodeJwtClaims(token: string): Record<string, unknown> {
 export async function runAssistant(params: RunAssistantParams): Promise<RunAssistantResult> {
   const { supabase, userId, claims, token } = params;
   const data = { messages: params.messages, branchId: params.branchId ?? null };
+
+  // Defense in depth: enforce the channel gate in the shared execution core too.
+  // Endpoint-level checks remain in place so disabled requests fail before auth/session work.
+  const { isAiModeEnabled } = await import("@/lib/ai-modes.server");
+  if (!(await isAiModeEnabled(params.channel))) {
+    const label = params.channel === "chat_tools" ? "AI ผ่านแชท tools/LINE" : "ผู้ช่วย AI";
+    throw new Error(`${label} ถูกปิดใช้งานโดยผู้ดูแลระบบ`);
+  }
 
   const apiKey = process.env["LOVABLE_API_KEY"];
   if (!apiKey) throw new Error("ยังไม่ได้เปิดใช้งาน AI สำหรับโปรเจกต์นี้");
