@@ -131,6 +131,7 @@ export const Route = createFileRoute("/api/public/line/assistant")({
             if (!roleRows || roleRows.length === 0) return fail(403, "no_permission", "ผู้ใช้ยังไม่ได้รับสิทธิ์ใช้งานระบบ");
 
             const result = await runAssistant({
+              channel: "chat_tools",
               supabase,
               userId: profile.id,
               claims,
