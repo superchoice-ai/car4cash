@@ -4,8 +4,7 @@
 //     nitro (build-only using cloudflare as a default target), VITE_* env injection, @ path alias,
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-//import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import.meta.env.VITE_CAR4CASH_BUILD_VERSION
+import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 // mcpPlugin() is intentionally NOT registered here.
 //
