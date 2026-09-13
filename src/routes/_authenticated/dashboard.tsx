@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -24,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useBranchFilter } from "@/hooks/useBranchFilter";
 import { PageHeader, StatCard } from "@/components/Common";
+import { LoanApplicationWizard } from "@/components/LoanApplicationWizard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatMoney, formatNumber, todayISO, formatThaiDate } from "@/lib/format";
@@ -51,7 +53,8 @@ interface ContractRow {
 
 function DashboardPage() {
   const { isHQ, branch } = useAuth();
-  const { branchId, scopeName } = useBranchFilter();
+  const { branchId } = useBranchFilter();
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard", branchId],
@@ -124,7 +127,6 @@ function DashboardPage() {
   const incomeMonth = sumCash("income", false);
   const expenseMonth = sumCash("expense", false);
 
-  // แนวโน้ม 6 เดือนย้อนหลัง
   const months: { key: string; label: string }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date();
@@ -166,9 +168,7 @@ function DashboardPage() {
             <Button asChild variant="outline">
               <Link to="/reports">ดูรายงาน</Link>
             </Button>
-            <Button asChild>
-              <Link to="/applications">สร้างคำขอสินเชื่อ</Link>
-            </Button>
+            <Button onClick={() => setWizardOpen(true)}>สร้างคำขอสินเชื่อ</Button>
           </>
         }
       />
@@ -298,6 +298,9 @@ function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <LoanApplicationWizard open={wizardOpen} onOpenChange={setWizardOpen} />
     </div>
   );
 }
+

@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, ShieldCheck } from "lucide-react";
+import { EnvironmentVersionInfo } from "@/components/EnvironmentVersionInfo";
+import { waitForAuthenticatedSession } from "@/lib/auth-session";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -20,8 +22,12 @@ export const Route = createFileRoute("/auth")({
       { property: "og:description", content: "ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด สำหรับพนักงานและผู้บริหาร" },
     ],
   }),
-  validateSearch: (s: Record<string, unknown>): { next?: string } =>
-    typeof s["next"] === "string" ? { next: s["next"] } : {},
+  validateSearch: (search: Record<string, unknown>): { next?: string; inactive?: string } => {
+    const result: { next?: string; inactive?: string } = {};
+    if (typeof search["next"] === "string") result.next = search["next"];
+    if (search["inactive"] === "1") result.inactive = "1";
+    return result;
+  },
   component: AuthPage,
 });
 
@@ -38,7 +44,7 @@ function safeNext(value: string | null | undefined): string | null {
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { next: nextParam } = Route.useSearch();
+  const { next: nextParam, inactive } = Route.useSearch();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,6 +53,7 @@ function AuthPage() {
   useEffect(() => {
     const err = new URLSearchParams(window.location.search).get("line_error");
     if (err) toast.error(err);
+    if (inactive === "1") toast.error("บัญชีผู้ใช้ถูกปิดใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
 
     // Preserve the post-login target across Google/LINE/email round-trips.
     const fromParam = safeNext(nextParam);
@@ -62,14 +69,14 @@ function AuthPage() {
       void navigate({ to: "/dashboard", replace: true });
     };
 
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) goAfterLogin();
+    void waitForAuthenticatedSession().then(({ session }) => {
+      if (session) goAfterLogin();
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (session) goAfterLogin();
     });
     return () => sub.subscription.unsubscribe();
-  }, [navigate, nextParam]);
+  }, [inactive, navigate, nextParam]);
 
 
   const validate = () => {
@@ -147,7 +154,10 @@ function AuthPage() {
             SC
           </div>
           <h1 className="text-2xl font-bold">SuperChoice AI</h1>
-          <p className="text-sm opacity-80">ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด</p>
+          <p className="inline-flex items-center justify-center gap-1 text-sm opacity-80">
+            ระบบสินเชื่อจำนำเล่มทะเบียนแลกเงินสด
+            <EnvironmentVersionInfo className="text-primary-foreground/90" />
+          </p>
         </div>
 
         <Card>
