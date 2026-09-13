@@ -1,3 +1,20 @@
+<!-- MAIN-BRANCH GOVERNANCE READ GATE — MANDATORY START -->
+> [!CAUTION]
+> **Before any development or any action involving any branch, every AI MUST read every Markdown governance and instruction file from the latest `main` branch first.**
+>
+> This gate applies to all branches and all development or branch activity, including investigation that will lead to implementation, planning, editing, creating or switching branches, commits, pushes, synchronization, comparison, cherry-picks, rebases, pull requests, merges, releases, rollbacks, deletion, and cross-repository porting.
+>
+> Before proceeding, the AI MUST:
+>
+> 1. Verify the exact repository and latest `main` commit.
+> 2. Recursively list and read **every file whose name ends in `.md` (case-insensitive) on `main` in full**, including files in the repository root, hidden directories, and all subdirectories.
+> 3. Read from `main` itself; a copy on the working, source, target, preview, or feature branch is not a substitute.
+> 4. Respond to the authorized owner with this exact confirmation before development or branch action: **“ยืนยันอ่าน .MD ทุกตัวใน main และจะปฏิบัติตามอย่างเคร่งครัด”**
+> 5. Only after that confirmation, continue through all other required interpretation, scope, impact, readiness, authorization, testing, and release gates.
+>
+> If any `.md` file cannot be listed or read completely, or the latest `main` identity cannot be verified, STOP with `NO-GO` and report the blocker. Reading these files is a mandatory prerequisite, not authorization to mutate anything. Repeat this gate for each repository involved and repeat it whenever `main` changes before the planned action.
+<!-- MAIN-BRANCH GOVERNANCE READ GATE — MANDATORY END -->
+
 <!-- AI ENGINEERING COPILOT — MANDATORY START HERE -->
 > [!CAUTION]
 > **Every human and AI contributor MUST read `AI_ENGINEERING_COPILOT.md` BEFORE reasoning, planning, editing, committing, merging, publishing, deploying, testing, or taking any other action in this repository.**
