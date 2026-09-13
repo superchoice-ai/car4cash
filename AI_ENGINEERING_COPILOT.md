@@ -91,3 +91,94 @@ Do not silently clean up or delete production data. If cleanup requires a data w
 Every execution report must distinguish **DONE**, **IN PROGRESS/UNKNOWN**, and **NOT DONE**. Never convert a plan, recommendation, attempted action, or expected result into evidence of completion.
 
 These rules supplement the repository's existing Impact Review, Interpretation Confirmation, System Readiness, Explicit Authorization, and Iron Rules governance.
+
+<!-- EXECUTION EVIDENCE AND WORKSPACE PROVENANCE GATE — BEGIN -->
+# CRITICAL RULE — Execution Evidence, Workspace Provenance, and Reproducible Validation
+
+> [!CAUTION]
+> A successful command, preview, or build is valid evidence only for the exact repository, commit/branch, execution environment, working directory, package manager, dependency state, and command that produced it. Never transfer that conclusion to another workspace, provider, repository, branch, or command without rerunning and recording fresh evidence.
+
+## 1. Identify the execution source before making any claim
+
+Before reporting that source code, dependencies, a workspace, Typecheck, Build, Preview, or tests are ready or passing, record:
+
+- exact repository and commit/source branch;
+- provider and execution environment, such as Lovable Cloud, Codex Cloud, GitHub Actions, local terminal, or another runner;
+- exact working directory;
+- runtime and package-manager names and versions;
+- dependency-install command and its exit code;
+- exact validation command and its exit code.
+
+GitHub connector access is repository access, not proof that a repository is mounted in a terminal. A Lovable workspace such as `/dev-server` is not a ChatGPT/Codex workspace. A result from one must never be described as a result from the other.
+
+Do not claim that a full source checkout, `node_modules`, cache, credentials, environment bindings, or build prerequisites exist unless directly verified in that same execution environment. Tool availability, prior conversation, a preview page, or a historical success message is not evidence.
+
+## 2. Preserve the repository's package-manager contract
+
+Determine the intended package manager and lockfile from current repository evidence before installing dependencies. Do not silently substitute npm, Bun, pnpm, or Yarn for one another.
+
+- Use the committed lockfile and repository-declared package manager when present.
+- A successful `npm install`, `bun install`, cached Preview build, or existing dependency directory does not prove that clean/frozen installation succeeds.
+- If installation changes a lockfile, record the before/after status and diff. Do not describe the working tree as clean.
+- Never commit a regenerated lockfile automatically. Review dependency, engine, integrity, registry, and transitive-version changes first and obtain authorization when the change is outside scope.
+
+## 3. Treat validation gates as separate evidence
+
+Build, Typecheck, lint, tests, Preview, and runtime checks are independent. Passing one does not imply another passed.
+
+Run the repository-equivalent checks required by its scripts and governance, including when applicable:
+
+1. clean/frozen dependency installation, such as `npm ci` or the package-manager equivalent;
+2. TypeScript Typecheck, such as `npx tsc --noEmit`, `bunx tsgo --noEmit`, or the repository's stricter equivalent;
+3. production build;
+4. development/Preview build;
+5. configured lint and tests;
+6. final `git status` and diff inspection.
+
+Report every exact command and exit code. If a command was not run, say `NOT RUN`. If any mandatory command fails, say `PARTIAL/FAILED`; never summarize the repository as “passed,” “ready,” or “passed completely.” A successful Vite/Lovable Preview build does not override a failed Typecheck or clean install.
+
+## 4. Generated and plugin-owned artifact gate
+
+After any install, Typecheck, Build, Preview build, route generation, manifest extraction, or plugin execution, inspect the working tree for created, modified, deleted, or renamed files.
+
+Explicitly verify applicable generated/plugin-owned artifacts, including route trees, manifests, OAuth discovery routes, generated database types, build-version assets, and deployment configuration. A zero exit code is not acceptance if required artifacts disappeared, an authorization gate was bypassed, unrelated files changed, or the build introduced an unreviewed diff.
+
+Record whether each generated change must be committed, regenerated, restored, or excluded, based on current repository governance and source ownership. Never delete or restore generated files by assumption.
+
+## 5. Cross-provider and historical-evidence prohibition
+
+Historical chat, AI summaries, screenshots, Preview status, and prior provider logs are leads for investigation, not current validation evidence. Before relying on them:
+
+- open the underlying detailed command/tool record when available;
+- distinguish what was actually executed from what the AI merely stated;
+- distinguish the provider workspace from the current workspace;
+- rerun the required command on the exact candidate commit/environment when current acceptance is required.
+
+If provenance cannot be proven, label the claim `UNVERIFIED` or `UNKNOWN`, correct any earlier overstatement, and stop decisions that depend on it.
+
+## 6. Required final evidence table
+
+Every development completion report must include, where applicable:
+
+| Evidence | Required value |
+|---|---|
+| Repository | Exact owner/name |
+| Commit / source branch | Exact SHA and branch metadata |
+| Execution provider | Lovable, Codex Cloud, CI, local, etc. |
+| Working directory | Exact path |
+| Runtime/package manager | Names and versions |
+| Dependency installation | Exact command and exit code |
+| Typecheck | Exact command and exit code |
+| Production build | Exact command and exit code |
+| Development/Preview build | Exact command and exit code |
+| Tests/lint | Exact commands and exit codes, or `NOT RUN` |
+| Working-tree result | Before/after status and diff summary |
+| Generated/plugin artifacts | Preserved, intentionally changed, restored, or unresolved |
+| External actions | Commit, push, PR, merge, publish, deploy, migration, and data writes actually performed |
+
+## Standing lesson
+
+Car4Cash Typecheck/Build results produced inside Lovable Cloud's `/dev-server` workspace were previously conflated with ChatGPT/Codex workspace readiness and an unverified claim that `node_modules` was already available. Later Codex Cloud validation showed a different result: Typecheck and builds passed while `npm ci` failed because `package.json` and `package-lock.json` were inconsistent. Tansub showed the opposite pattern: clean installation and builds passed while Typecheck failed. Lovable also previously reported a successful build after a Vite/MCP adjustment that removed or changed required MCP/OAuth/generated route artifacts and required regression repair.
+
+The permanent rule is: preserve provenance, validate each gate independently, inspect generated/diff effects, and never convert a provider-specific or partial success into a repository-wide success claim.
+<!-- EXECUTION EVIDENCE AND WORKSPACE PROVENANCE GATE — END -->
