@@ -336,3 +336,86 @@ Result is `NO-GO` if the target environment is ambiguous, a required migration/o
 
 A Preview failure repeated because dependent code was exposed before `20260906180000_active_user_enforcement.sql` existed in the Preview database, causing the application to call a missing RPC. The first diagnosis focused on API-key possibilities instead of Console/Network evidence and target-DB migration state. Future work must prove dependency order and isolate DB → RPC/API → code/UI tests before release.
 <!-- DATABASE MIGRATION DEPENDENCY AND RPC 404 GATE — END -->
+
+<!-- FULL-STACK IMPACT, ORDER, AND VALIDATION GATE — BEGIN -->
+# CRITICAL RULE — Full-Stack Impact, Dependency Order, and Mandatory Validation
+
+> [!CAUTION]
+> This gate applies before every development task or branch action, regardless of whether the request appears to affect only UI, wording, configuration, or one file. A visible feature is not complete until every required upstream and downstream dependency has been traced, implemented, ordered, and verified.
+
+## 1. Mandatory full-system impact matrix
+
+Before editing or creating a branch, record each dimension as **affected**, **verified unaffected**, or **unknown** with evidence:
+
+- FE/UI, routes, state, responsive behavior, loading/error states, and generated client assets;
+- BE/server functions, middleware, SSR, background processing, and shared libraries;
+- database schema, existing data, constraints, indexes, triggers, functions, and views;
+- migrations, ordering, idempotency, backward compatibility, target environment, rollback/forward-fix, and whether application is separately authorized;
+- configuration, environment variables, build-time injection, feature flags, package/lock files, deployment bindings, and generated/plugin-owned files;
+- API/RPC contracts, schemas, request headers, proxies/gateways, caches, and every caller/consumer;
+- authentication, OAuth callbacks/redirects/session restoration, authorization, roles, branch/tenant scope, RLS policies, grants, and service-role boundaries;
+- external integrations and workflows, including n8n, Lovable, LINE, Cloudflare, webhooks, secrets references, Preview, and Production.
+
+An **unknown** in a required dependency is a stop condition. A clean textual diff or successful UI render is not proof that the system is compatible.
+
+## 2. Complete vertical-slice and dependency trace
+
+Trace each requested capability from entry point to final dependency and back. Do not copy only the visible component.
+
+Standing example: a version-info icon requires the UI component, environment-variable consumer, exact variable name, build-version generator, Vite/config injection, timezone/version rule, and verification in generated client and SSR assets. Copying only the icon/component and leaving a fallback such as `000000v.01` is incomplete.
+
+For every feature, maintain a source-to-target/dependency map listing what is copied, adapted, newly added, preserved, omitted, and why.
+
+## 3. Mandatory implementation and release order
+
+Define and follow the order before implementation. Unless compatibility evidence proves otherwise:
+
+1. verify repository, latest `main`, branch baseline, environments, and system/project identities;
+2. inventory dependencies, generated/config ownership, schema/Auth/RLS/API contracts, and existing behavior;
+3. prepare backward-compatible database/config prerequisites;
+4. apply migrations only to the explicitly authorized target environment and only when separately authorized;
+5. verify DB objects → grants/RLS/Auth → API/RPC/proxy → BE/server;
+6. implement or enable FE/UI consumers;
+7. run static validation and builds;
+8. verify Preview login/OAuth, protected routes, authenticated DB/API calls, error handling, and regressions;
+9. merge only after evidence is complete; deploy/publish remains a separate explicit authorization.
+
+Never expose dependent UI or code before its required migration, RPC, configuration, grant, or environment binding is proven ready.
+
+## 4. Mandatory checks before merge
+
+Run the repository-equivalent checks on the exact candidate commit and report commands, exit codes, failures, and evidence:
+
+- dependency installation using the committed lockfile when needed;
+- TypeScript typecheck: `npx tsc --noEmit` or the repository's stricter equivalent;
+- production build: `npm run build`;
+- development/Preview build when configured, such as `npm run build:dev`;
+- configured lint, unit, integration, and regression tests;
+- route, manifest, generated-artifact, and build-output inspection;
+- migration static review plus schema/RPC/grant/RLS checks when database-related;
+- Preview smoke test covering login/OAuth redirect, protected-route entry, authenticated DB/API access, and the changed user flow when applicable.
+
+A successful `npm run build` does not replace Typecheck: transpilation may succeed while `tsc --noEmit` detects an invalid contract. A page rendering before login does not prove that protected routes, APIs, RPCs, RLS, or database bindings work.
+
+If a mandatory check fails—even from a pre-existing error—record the baseline and exact failure, do not describe the candidate as fully passing, and do not merge unless the defect is fixed or the authorized owner explicitly accepts a documented exception under repository governance.
+
+## 5. Required evidence and stop conditions
+
+Before merge, retain:
+
+- impact matrix and dependency/order plan;
+- exact changed/deleted/renamed files and generated artifacts;
+- database/migration/config/API/Auth/RLS/OAuth impact and target-environment evidence;
+- commands and results for Typecheck, builds, tests, and Preview;
+- preserved behavior, rollback/forward-fix, and remaining unknowns.
+
+STOP before development, migration, merge, or release if scope, order, environment identity, dependency ownership, required checks, or rollback safety is unclear.
+
+## Standing lessons
+
+- Adding a version UI without its Vite build-time injection produced `Dev000000v.01` / `Prod000000v.01`.
+- A build passed while `npx tsc --noEmit` still failed in `src/routes/__root.tsx`; Build and Typecheck are separate mandatory gates.
+- Preview could render but fail after login when a required RPC/migration, API configuration, or authorization layer was missing or mismatched.
+
+These are dependency and sequencing failures. Future work must prove the complete vertical slice and validate each layer in order.
+<!-- FULL-STACK IMPACT, ORDER, AND VALIDATION GATE — END -->
