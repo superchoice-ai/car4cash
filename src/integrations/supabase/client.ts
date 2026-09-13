@@ -159,12 +159,13 @@ function createSupabaseClient() {
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+// Lazy client: bind callable properties to the real Supabase instance.
+// Supabase methods such as rpc() rely on `this.rest`; returning them with the
+// Proxy as receiver breaks that internal `this` context.
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
-  get(_, prop, receiver) {
+  get(_, prop) {
     if (!_supabase) _supabase = createSupabaseClient();
-    return Reflect.get(_supabase, prop, receiver);
+    const value = Reflect.get(_supabase, prop, _supabase);
+    return typeof value === 'function' ? value.bind(_supabase) : value;
   },
 });
-

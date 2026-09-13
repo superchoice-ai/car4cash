@@ -1,3 +1,20 @@
+<!-- MAIN-BRANCH GOVERNANCE READ GATE — MANDATORY START -->
+> [!CAUTION]
+> **Before any development or any action involving any branch, every AI MUST read every Markdown governance and instruction file from the latest `main` branch first.**
+>
+> This gate applies to all branches and all development or branch activity, including investigation that will lead to implementation, planning, editing, creating or switching branches, commits, pushes, synchronization, comparison, cherry-picks, rebases, pull requests, merges, releases, rollbacks, deletion, and cross-repository porting.
+>
+> Before proceeding, the AI MUST:
+>
+> 1. Verify the exact repository and latest `main` commit.
+> 2. Recursively list and read **every file whose name ends in `.md` (case-insensitive) on `main` in full**, including files in the repository root, hidden directories, and all subdirectories.
+> 3. Read from `main` itself; a copy on the working, source, target, preview, or feature branch is not a substitute.
+> 4. Respond to the authorized owner with this exact confirmation before development or branch action: **“ยืนยันอ่าน .MD ทุกตัวใน main และจะปฏิบัติตามอย่างเคร่งครัด”**
+> 5. Only after that confirmation, continue through all other required interpretation, scope, impact, readiness, authorization, testing, and release gates.
+>
+> If any `.md` file cannot be listed or read completely, or the latest `main` identity cannot be verified, STOP with `NO-GO` and report the blocker. Reading these files is a mandatory prerequisite, not authorization to mutate anything. Repeat this gate for each repository involved and repeat it whenever `main` changes before the planned action.
+<!-- MAIN-BRANCH GOVERNANCE READ GATE — MANDATORY END -->
+
 <!-- AI ENGINEERING COPILOT — MANDATORY START HERE -->
 > [!CAUTION]
 > **Every human and AI contributor MUST read `AI_ENGINEERING_COPILOT.md` BEFORE reasoning, planning, editing, committing, merging, publishing, deploying, testing, or taking any other action in this repository.**
@@ -248,3 +265,74 @@ For every branch integration or cross-repository port, retain concise evidence o
 If this evidence is incomplete, the change is not ready to merge.
 
 <!-- BRANCH LIFECYCLE AND CROSS-REPOSITORY PORTING — END -->
+
+
+<!-- DATABASE MIGRATION DEPENDENCY AND RPC 404 GATE — START -->
+# CRITICAL RULE — Database Migration Dependency, Deployment Order, and RPC 404 Diagnosis
+
+> [!CAUTION]
+> This gate is mandatory whenever application code, UI, API, workflow, Edge Function, or integration depends on a database migration, table, column, view, trigger, function, RPC, grant, RLS policy, schema, or generated database type. A successful build, reachable page, or deployed frontend is not evidence that the target database is ready.
+
+## 1. Build and maintain an explicit dependency manifest
+
+Before implementation or release, identify for every changed consumer:
+
+- the exact repository, branch, commit, application/project, and target environment;
+- the exact database service/project/environment and migration target;
+- each required migration filename and immutable commit/SHA;
+- every required schema object, including exact schema-qualified table, column, view, trigger, function/RPC signature, grant, RLS policy, and generated type;
+- the consumers that require each object and the minimum compatible version;
+- deployment order, validation evidence, rollback/forward-fix plan, and owner authorization.
+
+Do not group unrelated changes into vague labels such as “code group,” “backend update,” or “migration done.” Dependency evidence must be traceable per change set and per target environment.
+
+## 2. Mandatory deployment order
+
+Unless a confirmed compatibility plan explicitly proves another safe sequence, use this order:
+
+1. verify repository/branch/commit and exact target database environment;
+2. back up or define a safe rollback/forward-fix boundary;
+3. apply required backward-compatible migrations to that target database;
+4. verify migration history and query the required schema objects/RPC signatures directly;
+5. verify grants, Auth/RLS, role/branch/tenant scope, and a minimal authenticated read-only RPC/API probe;
+6. deploy or expose the dependent API/code/UI;
+7. test separately in dependency order: Database → RPC/API → application code/UI → affected end-to-end path;
+8. record evidence for every group before continuing to the next group.
+
+Never deploy or enable code that calls a new RPC, column, table, function, view, trigger, policy, or signature before proving that the exact target database contains and permits it. Preview and Production are separate targets; applying a migration to one never proves it exists in the other.
+
+## 3. Compatibility and rollback rule
+
+Prefer expand-and-contract migrations when old and new code may coexist. A rollback plan must account for both code and database state. Do not assume reverting code reverses a migration, and do not destructively down-migrate production data unless separately reviewed and explicitly authorized. If atomic release is unavailable, keep the new consumer disabled or fail-closed until database readiness is proven.
+
+## 4. Mandatory RPC/API 404 diagnosis order
+
+When an RPC/API request returns HTTP 404, do not begin by guessing API keys, credentials, proxy behavior, or provider incidents. Capture evidence first and diagnose in this order:
+
+1. Browser Console and Network: exact URL, method, status, response body/error code, request origin, and environment identity;
+2. client configuration: exact API base URL/project reference and schema used by the running Preview/Production build;
+3. target database: migration history and existence of the exact schema-qualified object/function plus complete RPC signature/overloads;
+4. API exposure: schema exposure/cache refresh, grants, Auth/RLS, and role permissions;
+5. proxy/gateway/routing behavior;
+6. API key/token/credential validity only when the observed status/body or an authenticated control request supports that hypothesis;
+7. official provider status and relevant logs when project-path evidence indicates an external incident.
+
+Differentiate at minimum: route/object not found, RPC signature mismatch, schema cache miss, authorization/RLS denial, invalid credential, wrong project/environment, proxy rewrite, and provider outage. A first 404, 401, timeout, blank screen, or successful page reload is not root-cause proof.
+
+## 5. Required release evidence and fail-closed conditions
+
+Before merge, publish, deploy, or activation, record:
+
+- migration applied successfully to the exact target database;
+- direct existence/signature checks for every required object/RPC;
+- authenticated permission/RLS probe with expected role/branch/tenant scope;
+- separate test results for DB, RPC/API, code/UI, and affected end-to-end flows;
+- preserved behavior/regression results for existing consumers;
+- rollback/forward-fix readiness and remaining UNKNOWN items.
+
+Result is `NO-GO` if the target environment is ambiguous, a required migration/object/signature is missing, migration state cannot be verified, Preview/Production bindings are unclear, tests were skipped or combined so the failing layer cannot be identified, or the dependent code would become reachable before its database prerequisites.
+
+## Standing lesson
+
+A Preview failure repeated because dependent code was exposed before `20260906180000_active_user_enforcement.sql` existed in the Preview database, causing the application to call a missing RPC. The first diagnosis focused on API-key possibilities instead of Console/Network evidence and target-DB migration state. Future work must prove dependency order and isolate DB → RPC/API → code/UI tests before release.
+<!-- DATABASE MIGRATION DEPENDENCY AND RPC 404 GATE — END -->

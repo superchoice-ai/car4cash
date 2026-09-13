@@ -23,6 +23,7 @@
 - Existing `/assistant`, MCP tools, and AI-mode controls are retained.
 - OAuth redirect validation continues to use the existing safe `next` handling.
 - Group 6 retains its bounded OAuth session restoration; group 7 checks activity only after an authenticated session is available.
+- The lazy Supabase Proxy binds callable properties to the real client instance so `rpc()`, `from()`, and other methods retain the internal `this.rest` context.
 - No Tansub Supabase project reference is introduced.
 
 ## Database impact
@@ -41,6 +42,7 @@ No migration was run against any database during this port. Preview/production s
 - Development build: passed.
 - TypeScript check: the ported files introduce no reported errors. The command remains blocked by the pre-existing baseline error in `src/routes/__root.tsx` (`TS2322`, `ErrorRouteComponent` error type mismatch).
 - Static scope scan: no Tansub branding or Tansub Supabase project reference found in committed source or migrations.
+- Supabase client trace: `@supabase/supabase-js` methods call `this.rest`; the Proxy now matches the verified Tansub binding implementation while retaining Car4Cash preview storage and API-key injection.
 
 ## Not performed
 
