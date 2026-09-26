@@ -419,3 +419,74 @@ STOP before development, migration, merge, or release if scope, order, environme
 
 These are dependency and sequencing failures. Future work must prove the complete vertical slice and validate each layer in order.
 <!-- FULL-STACK IMPACT, ORDER, AND VALIDATION GATE — END -->
+
+<!-- ANTI-OVERENGINEERING DEVELOPMENT GATE — BEGIN -->
+# Mandatory AI entry gate: proportional development and main-based branches
+
+This gate applies to every human developer and every AI/agent/vendor, including ChatGPT/Codex, Claude, Gemini, GitHub Copilot, Cursor, Windsurf, Builder.io, Lovable, and future tools. Tool-specific memory, Skill, Plugin, MCP, chat history, or prior familiarity does not replace this gate.
+
+## 1. Mandatory read before any development
+
+Before planning, editing, generating, migrating, installing, building, committing, or asking another system to perform development, the worker must:
+
+1. identify and report the exact repository, target branch, and current `main` SHA;
+2. read `AGENTS.md` and every repository Markdown file (`*.md`, case-insensitive) from the latest `main`;
+3. state exactly: **“ยืนยันอ่าน .MD ทุกตัวใน main และจะปฏิบัติตามอย่างเคร่งครัด”**;
+4. identify the requested scope, affected systems, and prohibited systems;
+5. stop and ask the owner if repository, branch, environment, scope, dependency ownership, or authorization is unclear.
+
+This read gate must be repeated for each new development task and after `main` changes. An AI must not assume that another AI, an earlier chat, cached context, or a prior read is sufficient.
+
+Repository instructions are the cross-vendor source of truth. Vendor-specific instruction files may point to this file, but no Skill, Plugin, MCP server, or vendor feature may weaken or bypass it.
+
+## 2. Mandatory branch creation from current main
+
+Every development task that changes application code, UI, configuration, dependencies, lockfiles, generated artifacts, database schema/migrations, APIs, Auth/RLS/OAuth, workflows, integrations, build behavior, or runtime behavior must:
+
+1. fetch/resolve the latest `main`;
+2. create a new, task-specific branch from that exact `main` commit;
+3. report repository, new branch, and base SHA before editing;
+4. keep changes inside the approved scope;
+5. never develop directly on `main`, never reuse an unrelated/stale branch, and never assume that an existing branch is pending merge;
+6. never merge, open a PR, publish, deploy, apply a migration, or change an external system unless the owner separately authorizes that action.
+
+Documentation-only governance updates may be committed directly to `main` without a PR only when the owner explicitly orders that exact exception. This exception never authorizes application development on `main`.
+
+## 3. Proportional-development rule: do not use an elephant to catch a grasshopper
+
+Before development, choose the smallest safe action that solves the verified problem and protects the next foreseeable step. Do not turn a working system into a broad modernization project.
+
+| Level | What should be done | Urgency |
+|---|---|---|
+| Continue operating | Production, localhost, Builder.io, Builder.io VS Code plugin, and Lovable operate normally | Continue work; do not stop the system solely for speculative cleanup |
+| Small, high-value fix | For Tansub, apply the three-line Root Error Boundary type correction on a new branch from current `main`, if current `main` still contains the known mismatch | Do before the next Tansub development cycle; re-verify instead of merging a stale branch blindly |
+| Do at the triggering moment | Synchronize/regenerate the lockfile when adding/updating a dependency or creating a new clean environment | Do not rush solely for cosmetic consistency; complete it when the trigger occurs |
+| Not yet necessary | Full CI, many layers of required checks, or extensive automation | Add when team size, development frequency, release frequency, or incident risk justifies it |
+| Do not do now | Upgrade the entire dependency set merely to make versions look newer or cleaner | Avoid; regression risk is greater than the current benefit |
+
+## 4. Decision test for work discovered during development
+
+For every issue found outside the requested change, classify it before acting:
+
+- **Required now:** directly blocks the approved task, creates an immediate security/data-integrity risk, or is necessary for the smallest safe vertical slice.
+- **Small and high-value:** minimal, well-understood, tested, and prevents a near-term known failure.
+- **Trigger-based debt:** record it and address it only when its trigger occurs, such as dependency modification, clean-environment creation, or runtime upgrade.
+- **Deferred scaling control:** CI expansion, extensive automation, or multiple approval layers that are not justified by current scale.
+- **Out of scope:** do not change it; report it with an example of possible future impact.
+
+Do not silently expand scope in the name of prevention, cleanup, modernization, best practice, or consistency. A working Production system is evidence to consider, but it is not proof that a clean clone, clean install, new environment, Typecheck, build, migration, or recovery procedure will succeed.
+
+## 5. Completion evidence
+
+At completion, report:
+
+- repository, branch, base SHA, and final commit SHA;
+- exact files changed;
+- commands actually run, working directory, and exit code;
+- checks not run as `NOT RUN` or `UNVERIFIED`;
+- impact on Production, localhost, Builder.io, Lovable, DB/migrations, APIs, Auth/RLS/OAuth, integrations, and generated artifacts;
+- remaining trigger-based debt without claiming that it must be fixed immediately.
+
+A passing existing runtime must not be used to fabricate clean-install or build evidence. Conversely, a theoretical future risk must not be used to justify unnecessary broad changes today.
+<!-- ANTI-OVERENGINEERING DEVELOPMENT GATE — END -->
+
