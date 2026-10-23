@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -1609,6 +1609,19 @@ export type Database = {
     }
     Functions: {
       can_access_branch: { Args: { _branch: string }; Returns: boolean }
+      check_customer_identity_duplicate: {
+        Args: {
+          _exclude_customer_id?: string
+          _national_id: string
+          _phone: string
+        }
+        Returns: {
+          conflict_field: string
+          customer_code: string
+          customer_id: string
+          customer_name: string
+        }[]
+      }
       delete_integration_secret: { Args: { _key: string }; Returns: boolean }
       execute_approval_request: {
         Args: {
@@ -1649,9 +1662,9 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_current_user_active: { Args: never; Returns: boolean }
       is_hq: { Args: { _user_id: string }; Returns: boolean }
       is_manager: { Args: never; Returns: boolean }
-      is_current_user_active: { Args: never; Returns: boolean }
       list_integration_secrets: {
         Args: never
         Returns: {
